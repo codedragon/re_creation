@@ -1,0 +1,1 @@
+Set of files to re-create either a scene or a segment of a goBananas game from the original data file. Eventually will optionally overlay eye trace over the video re-play. Uses time stamps to determine where in file to re-create.
