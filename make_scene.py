@@ -1,7 +1,6 @@
 from direct.showbase.ShowBase import ShowBase
 from direct.showbase.DirectObject import DirectObject
 from panda3d.core import PerspectiveLens, Point3
-from math import pi, sin, cos
 from direct.task import Task
 import pickle
 
@@ -9,19 +8,22 @@ import pickle
 class BananaWorld(DirectObject):
     def __init__(self):
 
-        with open('../play_data/pickle_data') as input:
-            banana_pos = pickle.load(input)
+        with open('../play_data/pickle_data') as variable:
+            start_time = pickle.load(variable)
+            banana_pos = pickle.load(variable)
             #print(banana_pos)
-            banana_h = pickle.load(input)
+            banana_h = pickle.load(variable)
             #print(banana_h)
-            gone_bananas = pickle.load(input)
+            gone_bananas = pickle.load(variable)
             #print(gone_bananas)
-            avatar_h = float(pickle.load(input))
+            #print(int(gone_bananas[0][-2:]))
+            self.avatar_h = float(pickle.load(variable)[-1])
             #print(avatar_h)
-            apl = pickle.load(input)
+            apl = pickle.load(variable)[-1]
             #print(avatar_pos)
 
-        avatar_pos = Point3(float(apl[0]), float(apl[1]), float(apl[2]))
+        self.avatar_pos = Point3(float(apl[0]), float(apl[1]), float(apl[2]))
+        #print(self.avatar_pos)
         #config =
         #data_file =
         #time_stamp =
@@ -55,13 +57,13 @@ class BananaWorld(DirectObject):
         lens.setNear(0.1)
         print 'near camera', lens.getNear()
         #base.cam.setPos(0, 0, 1)
-        base.cam.setPos(avatar_pos)
-        base.cam.setH(avatar_h)
+        base.cam.setPos(self.avatar_pos)
+        base.cam.setH(self.avatar_h)
         #self.smiley = base.loader.loadModel('smiley')
         #self.smiley.setPos(Point3(0, 6, 0))
         #self.smiley.reparentTo(render)
         #print 'smiley', self.smiley.getPos()
-        terrainModel = base.loader.loadModel('../goBananas/models/towns/play_field.bam')
+        terrainModel = base.loader.loadModel('../goBananas/models/towns/field.bam')
         terrainModel.setPos(Point3(0, 0, 0))
         terrainModel.reparentTo(render)
         #print 'terrain', terrainModel.getPos()
@@ -87,32 +89,29 @@ class BananaWorld(DirectObject):
         windmillModel.setScale(0.2)
         windmillModel.setH(45)
         windmillModel.reparentTo(render)
-        j = 0
-        for i in banana_h:
+
+        # get rid of bananas already gone
+        ind = range(len(banana_h))
+        for i in gone_bananas:
+            ind.pop(int(i[-2:]))
+
+        for i in ind:
+            #print('go', i)
             bananaModel = base.loader.loadModel('../goBananas/models/bananas/banana.bam')
-            #print(j)
-            #print(banana_pos[j])
-            #print(banana_pos[j+1])
-            #print(banana_pos[j+2])
-            bananaModel.setPos(Point3(float(banana_pos[j]), float(banana_pos[j+1]), float(banana_pos[j+2])))
-            j += 3
+            bananaModel.setPos(Point3(float(banana_pos[i][0]), float(banana_pos[i][1]), float(banana_pos[i][2])))
             bananaModel.setScale(0.5)
-            bananaModel.setH(float(i))
+            bananaModel.setH(float(banana_h[i]))
             bananaModel.reparentTo(render)
-        #coffeeModel = base.loader.loadModel('./db_models/stores/Coffee_Shop.bam')
-        #coffeeModel.setPos(Point3(14.2, -2.7, 0))
-        # uncomment if you want to spin around
-        #base.taskMgr.add(self.frame_loop, "frame_loop")
+
+        # hit the space bar if you want to spin around
+        self.accept("space", base.taskMgr.add, [self.frame_loop, "frame_loop"])
         
     def frame_loop(self, task):
+        # spin in a circle
         angleDegrees = task.time * 10.0
-        angleRadians = angleDegrees * (pi / 180)
-        base.cam.setPos(1 * sin(angleRadians), -1.0 * cos(angleRadians), 2)
-        base.cam.setHpr(angleDegrees, 0, 0)
-        #self.camera.setPos(20 * sin(angleRadians), -20.0 * cos(angleRadians), 3)
-        #self.camera.setHpr(angleDegrees, 0, 0)
-
+        base.cam.setHpr(self.avatar_h + angleDegrees, 0, 0)
         return task.cont
+
 if __name__ == "__main__":
     BW = BananaWorld()
     run()
