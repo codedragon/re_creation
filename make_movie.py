@@ -1,7 +1,7 @@
 from __future__ import division
 from direct.showbase.ShowBase import ShowBase
 from direct.showbase.DirectObject import DirectObject
-from panda3d.core import PerspectiveLens, Point3
+from panda3d.core import PerspectiveLens, Point3, LineSegs
 from direct.task import Task
 import pickle
 
@@ -9,7 +9,7 @@ import pickle
 class BananaWorld(DirectObject):
     def __init__(self):
 
-        with open('../play_data/pickle_data') as variable:
+        with open('../play_data/data_14_2_12') as variable:
             start_time = int(pickle.load(variable))
             if start_time == 0:
                 print('This movie starts from the beginning of the file.'
@@ -37,9 +37,8 @@ class BananaWorld(DirectObject):
         self.avatar_pos = [[float(j) for j in i] for i in avatar_pos]
         self.banana_ts = [float(i) for i in banana_ts]
         self.gone_bananas = [int(i[-2:]) for i in gone_bananas]
-        self.eye_data = [[float(j) for j in i] for i in eye_data]
         self.eye_ts = [float(i) for i in eye_ts]
-        print(self.eye_ts)
+
         # Things that can affect camera:
         # options resolution resW resH
         base = ShowBase()
@@ -52,12 +51,26 @@ class BananaWorld(DirectObject):
         # aspect ratio 1.3333
         lens.setAspectRatio(800.0 / 600.0)
         base.cam.node().setLens(lens)
-        print lens.getFov()
-        print lens.getAspectRatio()
+        print('Fov', lens.getFov())
+        print('Aspect Ratio', lens.getAspectRatio())
         # set near to be same as avatar's radius
         lens.setNear(0.1)
-        print 'near camera', lens.getNear()
+        print('near camera', lens.getNear())
         #base.cam.setPos(0, 0, 1)
+        #print('x', base.win.getXSize())
+        #print('y', base.win.getYSize())
+        # when doing the calibration task I used the orthographic lens with normal render,
+        # so the origin was in the center, but when using pixel2d the origin is in the top
+        # left corner, so we must move the coordinate system to the right and down by half
+        # the screen
+        self.eye_data = []
+        for i in eye_data:
+            self.eye_data.append((float(i[0]) + base.win.getXSize()/2,
+                                  float(i[1]) - base.win.getYSize()/2))
+        #print self.eye_data
+
+        # for eye trace
+        self.eyes = []
 
         points = self.avatar_pos.pop(0)
         base.cam.setPos(Point3(points[0], points[1], points[2]))
@@ -65,10 +78,6 @@ class BananaWorld(DirectObject):
         self.avatar_ht.pop(0)
         self.avatar_pt.pop(0)
 
-        #self.smiley = base.loader.loadModel('smiley')
-        #self.smiley.setPos(Point3(0, 6, 0))
-        #self.smiley.reparentTo(render)
-        #print 'smiley', self.smiley.getPos()
         terrainModel = base.loader.loadModel('../goBananas/models/towns/field.bam')
         terrainModel.setPos(Point3(0, 0, 0))
         terrainModel.reparentTo(render)
@@ -115,6 +124,15 @@ class BananaWorld(DirectObject):
             if j < start_time:
                 self.bananaModel[self.gone_bananas.pop(i)].stash()
                 self.banana_ts.pop(i)
+
+        #print(len(self.eye_data))
+        self.last_eye = self.eye_data.pop(0)
+        #print(len(self.eye_data))
+        self.last_eye_ts = self.eye_ts.pop(0)
+        self.gen_eye_pos = self.get_data(self.eye_data)
+        self.gen_eye_ts = self.get_data(self.eye_ts)
+
+        base.movie()
 
         #self.accept("space", base.taskMgr.add, [self.frame_loop, "frame_loop"])
         self.gameTask = taskMgr.add(self.frame_loop, "frame_loop")
@@ -171,10 +189,29 @@ class BananaWorld(DirectObject):
                 break
 
         while i < len(self.eye_ts):
-            if self.eye_ts[i] < task.game_time:
-                print(self.eye_data[i][0])
-                print(self.eye_data.pop(i))
-                self.eye_ts.pop(i)
+            if self.last_eye_ts < task.game_time:
+                eye = LineSegs()
+                eye.setThickness(2.0)
+                #print('last_eye', self.last_eye)
+                eye.moveTo(self.last_eye[0], 55, self.last_eye[1])
+                # popping eye data is memory expensive
+                try:
+                    self.last_eye = next(self.gen_eye_pos)
+                except StopIteration:
+                    self.last_eye_ts = task.game_time + 10000
+                    #print('break')
+                    break
+                #print('here')
+                eye.drawTo(self.last_eye[0], 55, self.last_eye[1])
+                node = pixel2d.attachNewNode(eye.create())
+                self.eyes.append(node)
+                #print(self.eye_data[i][0])
+                #print(self.eye_data.pop(i))
+                self.last_eye_ts = next(self.gen_eye_ts)
+                # get rid of eye position from a while ago..
+                while len(self.eyes) > 100:
+                    self.eyes[0].removeNode()
+                    self.eyes.pop(0)
             else:
                 break
 
@@ -182,6 +219,10 @@ class BananaWorld(DirectObject):
         #task.last = task.time
         # look to see what happened during actual game.
         return task.cont
+
+    def get_data(self, data):
+        for item in data:
+            yield item
 
 if __name__ == "__main__":
     BW = BananaWorld()

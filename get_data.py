@@ -104,7 +104,9 @@ class GetData():
                             #print(tokens[4])
                             self.banana_pos.append(tokens[4][tokens[4].find('(') + 1:tokens[4].find(')')].split(','))
                             #self.banana_pos = banana_pos.split(',')
-                        elif tokens[2] == 'VROBJECT_HEADING':
+                        elif tokens[2] == 'VROBJECT_HEADING' and len(self.banana_head) < self.num_bananas:
+                            # for the moment, we aren't worried about the rotating bananas in bananarchy
+                            # simply take the first heading in file, and use that.
                             self.banana_head.append(tokens[4])
                     if int(tokens[0]) > self.start_time and tokens[3] == 'PandaEPL_avatar':
                         # if we are doing a scene, just need to collect navigation from last position
@@ -135,7 +137,7 @@ class GetData():
             self.avatar_head = [heading]
 
         #print(self.trial_mark)
-        #print('length banana head', len(self.banana_head))
+        print('length banana head', len(self.banana_head))
 
     def get_data_for_time_stamp(self, time_stamp):
         # because we didn't know which trial the timestamp would be in,
