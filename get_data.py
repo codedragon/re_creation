@@ -1,29 +1,18 @@
 from bisect import bisect
 import pickle
-# Here is my idea, read the file once, write file position for all:
-# start of new trial
-# banana positions
+
+# stuff that is different between gobananas and bananarchy
 # Yummy - gobananas
 # YUMMY - bananarchy
 # VROBJECT_POS    banana4
 # VROBJECT_POS    banana04
-# NewTrial - gobanans & bananarchy
+# same
+# NewTrial - gobananas & bananarchy
 # For bananarchy, heading is changing, but for gobananas, heading at
 # banana creation is accurate
 
-# This way, once I have a timestamp, I can quickly see which lines have the
-# corresponding banana positions and which have been 'eaten' before the timestamp
-# I will still have to open the file, but I can quickly get the banana positions
-# of bananas still showing. I will then go to 10 lines before the timestamp, and
-# check the position and heading until I reach the timestamp
-
-# Stuff I need from file: Avatar position and heading at timestamp
-# where all bananas are, and which ones are still in the scene.
-# have to look at beginning of trial
-
 
 class GetData():
-
     def __init__(self, config_file=None):
         print('This may take a while, depending on the size of the data file')
         # if we just want data between 2 time stamps, use start_time and time_stamp as beginning
@@ -34,10 +23,9 @@ class GetData():
             self.data_filename = '../play_data/giz_short.txt'
             #self.start_time = 0
             self.start_time = 1389990322200
-            # timestamp we are looking up. May want this as an input eventually...
             #self.time_stamp = 1389990270636
             self.time_stamp = 1389990322667
-            self.save_filename = '../play_data/pickle_data'
+            self.save_filename = '../play_data/test_data'
             self.get_eye_data = False
         else:
             print('data from file')
@@ -48,7 +36,6 @@ class GetData():
             self.time_stamp = config['time_stamp']
             self.save_filename = config['save_filename']
             self.get_eye_data = config['use_eye_data']
-
 
         self.trial_mark = []
         self.gone_bananas = []
@@ -62,6 +49,15 @@ class GetData():
         self.avatar_moves = []
         self.eye_data = []
         self.eye_times = []
+
+        # needed for internals:
+        self.now_trial = []
+
+        # stuff that will have to be condensed, since we don't know which trial
+        # we are getting data from until the end
+        self.now_banana_pos = []
+        self.now_gone_bananas = []
+        self.now_gone_ts = []
 
         # eventually need to get this from config
         self.num_bananas = 10
@@ -91,11 +87,9 @@ class GetData():
                 # stop looking at data once we get to the time_stamp
                 if int(tokens[0]) > self.time_stamp:
                     break
-                # only collect data past the start_time, if start_time is zero,
-                # we are only getting a frame, so empty variables whenever
-                # a new trial starts
                 if tokens[2] == 'NewTrial':
                     self.trial_mark.append(tokens[0])
+                    #print('newtrial')
                 elif tokens[2] == 'Yummy' or tokens[2] == 'YUMMY':
                     self.gone_bananas.append(tokens[3][:8])
                     self.gone_bananas_stamp.append(tokens[0])
@@ -106,8 +100,9 @@ class GetData():
                 elif len(tokens) > 3:
                     if tokens[3][:6] == 'banana':
                         if tokens[2] == 'VROBJECT_POS':
-                            #self.banana_pos.append(tokens[4])
-                            self.banana_pos.append(tokens[4][tokens[4].find('(')+1:tokens[4].find(')')].split(','))
+                            #print('append bananas')
+                            #print(tokens[4])
+                            self.banana_pos.append(tokens[4][tokens[4].find('(') + 1:tokens[4].find(')')].split(','))
                             #self.banana_pos = banana_pos.split(',')
                         elif tokens[2] == 'VROBJECT_HEADING':
                             self.banana_head.append(tokens[4])
@@ -118,9 +113,9 @@ class GetData():
                         # if we keep the time stamp, have to see how smooth this looks.
 
                         # for position and heading, append if we are collecting all avatar data,
-                        # otherwise just keep replacing
+                        # otherwise just keep replacing coordinates and heading, and use final one at end
                         if tokens[2] == 'VROBJECT_POS':
-                            coordinates = tokens[4][tokens[4].find('(')+1:tokens[4].find(')')].split(',')
+                            coordinates = tokens[4][tokens[4].find('(') + 1:tokens[4].find(')')].split(',')
                             if self.start_time is not 0:
                                 self.avatar_pos.append(coordinates)
                                 self.avatar_ptime.append(tokens[0])
@@ -140,10 +135,14 @@ class GetData():
             self.avatar_head = [heading]
 
         #print(self.trial_mark)
+        #print('length banana head', len(self.banana_head))
 
     def get_data_for_time_stamp(self, time_stamp):
-        # now find out where to look for all necessary variables.
-        # need to get file markers for start of the latest trial before
+        # because we didn't know which trial the timestamp would be in,
+        # have to narrow down some data after the fact, banana positions
+        # and which bananas have been 'eaten'
+
+        # need to get the file marker for start of the latest trial before
         # the time_stamp, so get value in list that is less than the
         # time_stamp.
         # convert from strings, trial mark is beginning of a trial
@@ -170,8 +169,8 @@ class GetData():
         # use the time stamp.
         # for this we need to check if there are any values of gone_bananas
         # between the start of the trial and the time stamp
-        [self.now_gone_bananas, self.now_gone_ts] = self.bisect_data(self.gone_bananas, self.gone_bananas_stamp, time_stamp)
-        [self.now_eye_data, self.now_eye_ts] = self.bisect_data(self.eye_data, self.eye_times, time_stamp)
+        [self.now_gone_bananas, self.now_gone_ts] = self.bisect_data(self.gone_bananas, self.gone_bananas_stamp,
+                                                                     time_stamp)
         # now put the data in a file
         self.pickle_info()
 
@@ -195,7 +194,8 @@ class GetData():
         with open(self.save_filename, 'wb') as output:
             pickle.dump(self.start_time, output, -1)
             pickle.dump(self.now_banana_pos, output, -1)
-            # banana heading doesn't change
+            # banana heading doesn't change, only in gobananas once.
+            # will be ugly if I try this on bananarchy data, though...
             pickle.dump(self.banana_head, output, -1)
             pickle.dump(self.now_gone_bananas, output, -1)
             pickle.dump(self.avatar_head, output, -1)
@@ -205,7 +205,7 @@ class GetData():
             pickle.dump(self.avatar_ptime, output, -1)
             pickle.dump(self.now_gone_ts, output, -1)
             # eye data
-            pickle.dump(self.now_eye_data, output, -1)
-            pickle.dump(self.now_eye_ts, output, -1)
+            pickle.dump(self.eye_data, output, -1)
+            pickle.dump(self.eye_times, output, -1)
             #pickle.dump(self.avatar_moves, output, -1)
 

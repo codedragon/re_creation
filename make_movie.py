@@ -37,9 +37,7 @@ class BananaWorld(DirectObject):
         self.avatar_pos = [[float(j) for j in i] for i in avatar_pos]
         self.banana_ts = [float(i) for i in banana_ts]
         self.gone_bananas = [int(i[-2:]) for i in gone_bananas]
-        self.eye_data = [float(i) for i in eye_data]
-        print(eye_data)
-        print(self.eye_data)
+        self.eye_data = [[float(j) for j in i] for i in eye_data]
         self.eye_ts = [float(i) for i in eye_ts]
         print(self.eye_ts)
         # Things that can affect camera:
@@ -172,12 +170,13 @@ class BananaWorld(DirectObject):
             else:
                 break
 
-        # while i < len(self.eye_ts):
-        #     if self.eye_ts[i] < task.game_time:
-        #         print(self.eye_data.pop(i), self.eye_data.pop(i))
-        #         self.eye_ts.pop(i)
-        #     else:
-        #         break
+        while i < len(self.eye_ts):
+            if self.eye_ts[i] < task.game_time:
+                print(self.eye_data[i][0])
+                print(self.eye_data.pop(i))
+                self.eye_ts.pop(i)
+            else:
+                break
 
         #dt = task.time - task.last
         #task.last = task.time

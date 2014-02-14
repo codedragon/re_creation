@@ -57,7 +57,7 @@ class TestGetData(unittest.TestCase):
     def test_first_banana_position(self):
         # Make sure we have the correct bananas.
         self.test_data.get_data_for_time_stamp(self.test_data.time_stamp)
-        #print(self.test_data.now_banana_pos[0])
+        #print(self.test_data.now_banana_pos)
         #print(self.banana_pos['banana00'])
         self.assertEqual(float(self.test_data.now_banana_pos[0][0]), self.banana_pos['banana00'][0])
         self.assertEqual(float(self.test_data.now_banana_pos[0][1]), self.banana_pos['banana00'][1])
