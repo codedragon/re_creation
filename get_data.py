@@ -11,12 +11,18 @@ import pickle
 # For bananarchy, heading is changing, but for gobananas, heading at
 # banana creation is accurate
 
+# For eye data, will have to convert from [1600, 900] to [1024, 768]
+# for gobananas data up until now. meh.
+# now_x_res * 1024/1600
+# now_y_res * 768/900
+
 
 class GetData():
     def __init__(self, config_file=None):
         print('This may take a while, depending on the size of the data file')
         # if we just want data between 2 time stamps, use start_time and time_stamp as beginning
-        # and end, otherwise, will only get avatar data for time_stamp
+        # and end, otherwise, will only get avatar data for time_stamp. If time_stamp is at the
+        # beginning of a trial, need to
 
         if config_file is None:
             print('default data')
@@ -27,6 +33,7 @@ class GetData():
             self.time_stamp = 1389990322667
             self.save_filename = '../play_data/test_data'
             self.get_eye_data = False
+            self.lfp_data_file = []
         else:
             print('data from file')
             config = {}
@@ -36,6 +43,7 @@ class GetData():
             self.time_stamp = config['time_stamp']
             self.save_filename = config['save_filename']
             self.get_eye_data = config['use_eye_data']
+            self.lfp_data_file = config['lfp_data_file']
 
         self.trial_mark = []
         self.gone_bananas = []
@@ -49,7 +57,7 @@ class GetData():
         self.avatar_moves = []
         self.eye_data = []
         self.eye_times = []
-
+        self.lfp_data = []
         # needed for internals:
         self.now_trial = []
 
@@ -61,8 +69,6 @@ class GetData():
 
         # eventually need to get this from config
         self.num_bananas = 10
-        # now we can get the data
-        self.get_data_from_file()
 
     def get_data_from_file(self):
         """ Try pulling out relevant data and pickling it? If we end up using the same data
@@ -85,20 +91,32 @@ class GetData():
             for line in f:
                 tokens = line[:-1].split('\t')
                 # stop looking at data once we get to the time_stamp
+                #print(len(tokens))
                 if int(tokens[0]) > self.time_stamp:
+                    #print(tokens[0])
                     break
                 if tokens[2] == 'NewTrial':
                     self.trial_mark.append(tokens[0])
                     #print('newtrial')
-                elif tokens[2] == 'Yummy' or tokens[2] == 'YUMMY':
+                elif tokens[2] == 'Yummy':
                     self.gone_bananas.append(tokens[3][:8])
+                    self.gone_bananas_stamp.append(tokens[0])
+                elif tokens[2] == 'YUMMY':
+                    #print('yummy')
+                    self.gone_bananas.append(tokens[3][:7])
                     self.gone_bananas_stamp.append(tokens[0])
                 elif int(tokens[0]) > self.start_time and tokens[2] == 'EyeData':
                     if self.get_eye_data:
                         self.eye_data.append((tokens[3], tokens[4]))
                         self.eye_times.append(tokens[0])
+                        #if abs(float(tokens[4])) > 440:
+                        #    print('maxed y', tokens[4])
+                        #if float(tokens[4]) > 0:
+                        #    print('positive', tokens[4])
                 elif len(tokens) > 3:
+                    #print('ok')
                     if tokens[3][:6] == 'banana':
+                        #print('banana')
                         if tokens[2] == 'VROBJECT_POS':
                             #print('append bananas')
                             #print(tokens[4])
@@ -137,7 +155,7 @@ class GetData():
             self.avatar_head = [heading]
 
         #print(self.trial_mark)
-        print('length banana head', len(self.banana_head))
+        #print('length banana head', len(self.banana_head))
 
     def get_data_for_time_stamp(self, time_stamp):
         # because we didn't know which trial the timestamp would be in,
@@ -159,7 +177,14 @@ class GetData():
         # Since we stop taking data at our ending time stamp, can just get all banana
         # positions after our trial starts. To get first banana for this trial, multiply
         # current trial number times the number of bananas we put out for each trial.
-        first_banana = i * self.num_bananas
+        #print(len(self.banana_pos)/self.num_bananas)
+        #print(len(self.trial_mark))
+        # ugh, kiril has 2 sets of positions for the first 10 bananas.
+        if len(self.banana_pos)/self.num_bananas > len(self.trial_mark):
+            #print('kiril')
+            first_banana = (i * self.num_bananas) + self.num_bananas
+        else:
+            first_banana = i * self.num_bananas
         #print('first banana', first_banana)
         #print(self.num_bananas)
         #print(self.banana_pos)
@@ -171,6 +196,9 @@ class GetData():
         # use the time stamp.
         # for this we need to check if there are any values of gone_bananas
         # between the start of the trial and the time stamp
+        #print('gone', self.gone_bananas)
+        #print('time', self.gone_bananas_stamp)
+        #print('time_stamp', time_stamp)
         [self.now_gone_bananas, self.now_gone_ts] = self.bisect_data(self.gone_bananas, self.gone_bananas_stamp,
                                                                      time_stamp)
         # now put the data in a file
@@ -181,16 +209,33 @@ class GetData():
         # of the trial to the current time stamp
         i = bisect(time_data, self.now_trial)
         j = bisect(time_data, time_stamp)
+        #print('time_data', time_data)
+        #print('now_trial', self.now_trial)
+        #print('i', i)
+        #print('j', j)
         if j > i:
             new_list = full_data[i:j]
             new_times = time_data[i:j]
         elif j == i:
-            new_list = full_data[i]
-            new_times = time_data[i]
+            # if no bananas have been eaten yet
+            if i == len(full_data):
+                #print('no bananas')
+                new_list = []
+                new_times = []
+            else:
+                new_list = full_data[i]
+                new_times = time_data[i]
         else:
             new_list = None
             new_times = None
         return new_list, new_times
+
+    def get_lfp_data(self, data_filename):
+        lfp_data = []
+        with open(data_filename, 'rb') as f:
+            for line in f:
+                lfp_data.append(line.split('\t'))
+        self.lfp_data = lfp_data[0]
 
     def pickle_info(self):
         with open(self.save_filename, 'wb') as output:
@@ -210,4 +255,6 @@ class GetData():
             pickle.dump(self.eye_data, output, -1)
             pickle.dump(self.eye_times, output, -1)
             #pickle.dump(self.avatar_moves, output, -1)
+            if self.lfp_data:
+                pickle.dump(self.lfp_data, output, -1)
 

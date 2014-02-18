@@ -9,11 +9,12 @@ import pickle
 class BananaWorld(DirectObject):
     def __init__(self):
 
-        with open('../play_data/data_14_2_12') as variable:
+        with open('../movies/data/bananarchy_movie_1') as variable:
             start_time = int(pickle.load(variable))
             if start_time == 0:
-                print('This movie starts from the beginning of the file.'
-                      'Is this really what you intended?')
+                message = """This data is for a single frame, please use a time_stamp
+                      rather than zero for the starting time"""
+                raise StartError(message)
             banana_pos = pickle.load(variable)
             #print(banana_pos)
             banana_h = pickle.load(variable)
@@ -24,21 +25,36 @@ class BananaWorld(DirectObject):
             avatar_h = pickle.load(variable)
             #print(avatar_h)
             avatar_pos = pickle.load(variable)
-            #print('before', self.avatar_pos)
+            #print('before', avatar_pos)
             avatar_ht = pickle.load(variable)
             avatar_pt = pickle.load(variable)
             banana_ts = pickle.load(variable)
             eye_data = pickle.load(variable)
             eye_ts = pickle.load(variable)
+            lfp_data = pickle.load(variable)
 
-        self.avatar_ht = [float(i) for i in avatar_ht]
-        self.avatar_pt = [float(i) for i in avatar_pt]
+        # make zero the start time, change to seconds (from milliseconds)
+        self.avatar_ht = [(float(i) - start_time) / 1000 for i in avatar_ht]
+        self.avatar_pt = [(float(i) - start_time) / 1000 for i in avatar_pt]
+        self.banana_ts = [(float(i) - start_time) / 1000 for i in banana_ts]
+        self.eye_ts = [(float(i) - start_time) / 1000 for i in eye_ts]
+
+        # non-time variables still need to be converted from strings
         self.avatar_h = [float(i) for i in avatar_h]
         self.avatar_pos = [[float(j) for j in i] for i in avatar_pos]
-        self.banana_ts = [float(i) for i in banana_ts]
-        self.gone_bananas = [int(i[-2:]) for i in gone_bananas]
-        self.eye_ts = [float(i) for i in eye_ts]
 
+        #print(gone_bananas[0])
+        # bananarchy data and gobananas data slightly different here
+        if len(gone_bananas[0]) == 7:
+            self.gone_bananas = [int(i[-1:]) for i in gone_bananas]
+        else:
+            self.gone_bananas = [int(i[-2:]) for i in gone_bananas]
+
+        self.lfp_data = [float(i) for i in lfp_data]
+        #print('size lfp', len(self.lfp_data))
+
+        #print('gone', self.gone_bananas)
+        #print('bananas', banana_pos)
         # Things that can affect camera:
         # options resolution resW resH
         base = ShowBase()
@@ -65,12 +81,27 @@ class BananaWorld(DirectObject):
         # the screen
         self.eye_data = []
         for i in eye_data:
-            self.eye_data.append((float(i[0]) + base.win.getXSize()/2,
-                                  float(i[1]) - base.win.getYSize()/2))
-        #print self.eye_data
+            self.eye_data.append((float(i[0]) + base.win.getXSize() / 2,
+                                  float(i[1]) - base.win.getYSize() / 2))
+            #print self.eye_data
 
-        # for eye trace
+        # for eye trace and lfp trace
         self.eyes = []
+        self.lfp = []
+        #print(len(self.eye_data))
+        self.last_eye = self.eye_data.pop(0)
+        #print(len(self.eye_data))
+        self.last_eye_ts = self.eye_ts.pop(0)
+        self.gen_eye_pos = self.get_data(self.eye_data)
+        self.gen_eye_ts = self.get_data(self.eye_ts)
+
+        # need to adjust y position for lfp
+        self.lfp_gain = 0.1
+        self.lfp_offset = -400
+        self.last_lfp = (self.lfp_data.pop(0) * self.lfp_gain) + self.lfp_offset
+        self.gen_lfp = self.get_data(self.lfp_data)
+        self.last_lfp_x = 100
+        self.lfp_test = 1
 
         points = self.avatar_pos.pop(0)
         base.cam.setPos(Point3(points[0], points[1], points[2]))
@@ -115,7 +146,8 @@ class BananaWorld(DirectObject):
         for i in bananas:
             #print('i', i)
             self.bananaModel.append(base.loader.loadModel('../goBananas/models/bananas/banana.bam'))
-            self.bananaModel[i].setPos(Point3(float(banana_pos[i][0]), float(banana_pos[i][1]), float(banana_pos[i][2])))
+            self.bananaModel[i].setPos(
+                Point3(float(banana_pos[i][0]), float(banana_pos[i][1]), float(banana_pos[i][2])))
             self.bananaModel[i].setScale(0.5)
             self.bananaModel[i].setH(float(banana_h[i]))
             self.bananaModel[i].reparentTo(render)
@@ -125,20 +157,13 @@ class BananaWorld(DirectObject):
                 self.bananaModel[self.gone_bananas.pop(i)].stash()
                 self.banana_ts.pop(i)
 
-        #print(len(self.eye_data))
-        self.last_eye = self.eye_data.pop(0)
-        #print(len(self.eye_data))
-        self.last_eye_ts = self.eye_ts.pop(0)
-        self.gen_eye_pos = self.get_data(self.eye_data)
-        self.gen_eye_ts = self.get_data(self.eye_ts)
-
-        base.movie()
+        #self.movie_task = base.movie('../movies/frames/movie_14_2_12', 5, 30, 'png', 4)
 
         #self.accept("space", base.taskMgr.add, [self.frame_loop, "frame_loop"])
         self.gameTask = taskMgr.add(self.frame_loop, "frame_loop")
 
         self.gameTask.last = 0         # Task time of the last frame
-        #dt = globalClock.getDt()
+
         # start the clock at 1 second before the official start so has time to load
         self.gameTask.game_time = start_time - 100
         #print('start', self.gameTask.game_time)
@@ -146,17 +171,20 @@ class BananaWorld(DirectObject):
         #print('increment', (1 / 60) * 1000000)
 
     def frame_loop(self, task):
+        dt = task.time - task.last
+        task.last = task.time
+        #print('time', task.time)
         #print('loop')
         # assume 60 Hz for original game, so draw everything that happens every 1/60 of a second.
         # time is in microseconds
-        task.game_time += (1 / 60) * 1000
+        #task.game_time += (1 / 75) * 1000
         #print(task.game_time)
         # check to see if anything has happened.
         i = 0
         while i < len(self.avatar_ht):
             #print(self.avatar_ht[i])
             #print(task.game_time)
-            if self.avatar_ht[i] < task.game_time:
+            if self.avatar_ht[i] < task.time:
                 #print('change direction')
                 base.cam.setH(self.avatar_h.pop(i))
                 self.avatar_ht.pop(i)
@@ -165,7 +193,7 @@ class BananaWorld(DirectObject):
                 break
 
         while i < len(self.avatar_pt):
-            if self.avatar_pt[i] < task.game_time:
+            if self.avatar_pt[i] < task.time:
                 #print('move')
                 #print(self.avatar_pt[i])
                 points = self.avatar_pos.pop(i)
@@ -178,18 +206,18 @@ class BananaWorld(DirectObject):
                 break
 
         while i < len(self.banana_ts):
-            if self.banana_ts[i] < task.game_time:
+            if self.banana_ts[i] < task.time:
                 #print('ok')
                 #print(self.banana_ts[i])
                 #print(task.game_time)
-                #print(self.gone_bananas[i])
+                #print('gone', self.gone_bananas[i])
                 self.bananaModel[self.gone_bananas.pop(i)].stash()
                 self.banana_ts.pop(i)
             else:
                 break
 
         while i < len(self.eye_ts):
-            if self.last_eye_ts < task.game_time:
+            if self.last_eye_ts < task.time:
                 eye = LineSegs()
                 eye.setThickness(2.0)
                 #print('last_eye', self.last_eye)
@@ -199,9 +227,11 @@ class BananaWorld(DirectObject):
                     self.last_eye = next(self.gen_eye_pos)
                 except StopIteration:
                     self.last_eye_ts = task.game_time + 10000
+
                     #print('break')
+                    #taskMgr.remove('self.movie_task')
                     break
-                #print('here')
+                    #print('here')
                 eye.drawTo(self.last_eye[0], 55, self.last_eye[1])
                 node = pixel2d.attachNewNode(eye.create())
                 self.eyes.append(node)
@@ -215,14 +245,44 @@ class BananaWorld(DirectObject):
             else:
                 break
 
-        #dt = task.time - task.last
-        #task.last = task.time
+        self.updateLFP(dt)
+
         # look to see what happened during actual game.
         return task.cont
 
     def get_data(self, data):
         for item in data:
             yield item
+
+    def updateLFP(self, dt):
+        # lfp data is taken at 1000Hz, and dt is the number of seconds since
+        # the last frame was flipped, so plot number of points = dt * 1000
+        lfp = LineSegs()
+        lfp.setThickness(2.0)
+        lfp.moveTo(self.last_lfp_x, 55, self.last_lfp)
+        #print('points to plot', int(dt * 1000))
+        self.lfp_test += int(dt * 1000)
+        #print('points so far', self.lfp_test)
+        for i in range(int(dt * 1000)):
+            try:
+                self.last_lfp = (next(self.gen_lfp) * self.lfp_gain) + self.lfp_offset
+                self.last_lfp_x += 0.01
+                lfp.drawTo(self.last_lfp_x, 55, self.last_lfp)
+            except StopIteration:
+                #print('done with lfp')
+                break
+
+        node = pixel2d.attachNewNode(lfp.create())
+        self.lfp.append(node)
+        # get rid of lfp trace from a while ago..
+        while len(self.lfp) > 500:
+            self.lfp[0].removeNode()
+            self.lfp.pop(0)
+
+class StartError(Exception):
+    def __init__(self, message):
+        # Call the base class constructor with the parameters it needs
+        Exception.__init__(self, message)
 
 if __name__ == "__main__":
     BW = BananaWorld()

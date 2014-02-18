@@ -1,6 +1,7 @@
 from direct.showbase.ShowBase import ShowBase
 from direct.showbase.DirectObject import DirectObject
-from panda3d.core import PerspectiveLens, Point3
+from panda3d.core import PerspectiveLens, Point3, Vec4
+from panda3d.core import Spotlight, AmbientLight
 from direct.task import Task
 import pickle
 
@@ -102,6 +103,23 @@ class BananaWorld(DirectObject):
             bananaModel.setScale(0.5)
             bananaModel.setH(float(banana_h[i]))
             bananaModel.reparentTo(render)
+
+        # Create Ambient Light
+        ambientLight = AmbientLight('ambientLight')
+        ambientLight.setColor(Vec4(0.2, 0.2, 0.2, 1))
+        ambientLightNP = render.attachNewNode(ambientLight)
+        render.setLight(ambientLightNP)
+
+        self.spot = Spotlight("spot")
+        self.spot.setColor(Vec4(1, 1, 1, 1))
+        self.lens = PerspectiveLens()
+        self.lens.setFov(10)
+        self.spot.setLens(self.lens)
+        self.spotNP = render.attachNewNode(self.spot)
+        render.setLight(self.spotNP)
+        self.spotNP.setPos(self.avatar_pos)
+        print('spotlight position', self.avatar_pos)
+        self.spotNP.setHpr(90, 5, 90)
 
         # hit the space bar if you want to spin around
         self.accept("space", base.taskMgr.add, [self.frame_loop, "frame_loop"])
