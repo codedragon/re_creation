@@ -60,6 +60,7 @@ class GetData():
         self.lfp_data = []
         # needed for internals:
         self.now_trial = []
+        self.resolution = []
 
         # stuff that will have to be condensed, since we don't know which trial
         # we are getting data from until the end
@@ -87,11 +88,15 @@ class GetData():
         # the avatar position is only written if we eat a banana, otherwise we have to figure it
         # out from movements. Collect position, reset movements to empty list, collect movements
         # until next position, empty list, etc.
+        first = True
         with open(self.data_filename, 'rb') as f:
             for line in f:
                 tokens = line[:-1].split('\t')
                 # stop looking at data once we get to the time_stamp
                 #print(len(tokens))
+                if first:
+                    self.resolution = [tokens[3], tokens[4]]
+                    first = False
                 if int(tokens[0]) > self.time_stamp:
                     #print(tokens[0])
                     break
@@ -239,6 +244,7 @@ class GetData():
 
     def pickle_info(self):
         with open(self.save_filename, 'wb') as output:
+            pickle.dump(self.resolution, output, -1)
             pickle.dump(self.start_time, output, -1)
             pickle.dump(self.now_banana_pos, output, -1)
             # banana heading doesn't change, only in gobananas once.
