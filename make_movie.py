@@ -91,10 +91,13 @@ class BananaWorld(DirectObject):
         #
         eye_factor = [movie_res[0]/resolution[0], movie_res[1]/resolution[1]]
         #print('eye factor', eye_factor)
+        fudge_factor_x = -70
+        fudge_factor_y = -60
+
         self.eye_data = []
         for i in eye_data:
-            x = (float(i[0]) * eye_factor[0]) + (base.win.getXSize() / 2)
-            y = (float(i[1]) * eye_factor[1]) - (base.win.getYSize() / 2)
+            x = (float(i[0]) * eye_factor[0]) + (base.win.getXSize() / 2) + fudge_factor_x
+            y = (float(i[1]) * eye_factor[1]) - (base.win.getYSize() / 2) + fudge_factor_y
             self.eye_data.append((x, y))
             #print self.eye_data
 
@@ -261,7 +264,7 @@ class BananaWorld(DirectObject):
                 self.last_lfp.append((next(self.gen_lfp) * self.lfp_gain) + self.lfp_offset)
                 #self.last_lfp_x += 0.05
                 # only plotting 200 data points at a time
-                while len(self.last_lfp) > 2000:
+                while len(self.last_lfp) > 3500:
                     self.last_lfp.pop(0)
             except StopIteration:
                 #print('done with lfp')
