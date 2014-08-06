@@ -24,6 +24,7 @@ class BananaWorld(DirectObject):
             banana_h = pickle.load(variable)
             #print(banana_h)
             gone_bananas = pickle.load(variable)
+
             #print(gone_bananas)
             #print(int(gone_bananas[0][-2:]))
             avatar_h = pickle.load(variable)
@@ -69,7 +70,7 @@ class BananaWorld(DirectObject):
         lens = PerspectiveLens()
         # Fov is set in config for 60
         lens.setFov(60)
-        # aspectratio should be same as window size
+        # aspect ratio should be same as window size
         # this was for 800x600
         # field of view 60 46.8264...
         # aspect ratio 1.3333

@@ -4,6 +4,10 @@ from panda3d.core import PerspectiveLens, Point3, Vec4
 from panda3d.core import Spotlight, AmbientLight
 from direct.task import Task
 import pickle
+import sys
+
+# Constants
+TURN_RATE = 20
 
 
 class BananaWorld(DirectObject):
@@ -60,6 +64,7 @@ class BananaWorld(DirectObject):
         #base.cam.setPos(0, 0, 1)
         base.cam.setPos(self.avatar_pos)
         base.cam.setH(self.avatar_h)
+        #print(base.cam.getHpr())
         #self.smiley = base.loader.loadModel('smiley')
         #self.smiley.setPos(Point3(0, 6, 0))
         #self.smiley.reparentTo(render)
@@ -105,30 +110,63 @@ class BananaWorld(DirectObject):
             bananaModel.reparentTo(render)
 
         # Create Ambient Light
-        ambientLight = AmbientLight('ambientLight')
-        ambientLight.setColor(Vec4(0.2, 0.2, 0.2, 1))
-        ambientLightNP = render.attachNewNode(ambientLight)
-        render.setLight(ambientLightNP)
+        #ambientLight = AmbientLight('ambientLight')
+        #ambientLight.setColor(Vec4(0.2, 0.2, 0.2, 1))
+        #ambientLightNP = render.attachNewNode(ambientLight)
+        #render.setLight(ambientLightNP)
 
-        self.spot = Spotlight("spot")
-        self.spot.setColor(Vec4(1, 1, 1, 1))
-        self.lens = PerspectiveLens()
-        self.lens.setFov(10)
-        self.spot.setLens(self.lens)
-        self.spotNP = render.attachNewNode(self.spot)
-        render.setLight(self.spotNP)
-        self.spotNP.setPos(self.avatar_pos)
-        print('spotlight position', self.avatar_pos)
-        self.spotNP.setHpr(90, 5, 90)
+        #self.spot = Spotlight("spot")
+        #self.spot.setColor(Vec4(1, 1, 1, 1))
+        #self.lens = PerspectiveLens()
+        #self.lens.setFov(10)
+        #self.spot.setLens(self.lens)
+        #self.spotNP = render.attachNewNode(self.spot)
+        #render.setLight(self.spotNP)
+        #self.spotNP.setPos(self.avatar_pos)
+        #print('spotlight position', self.avatar_pos)
+        #self.spotNP.setHpr(90, 5, 90)
 
-        # hit the space bar if you want to spin around
-        self.accept("space", base.taskMgr.add, [self.frame_loop, "frame_loop"])
-        
+        # A dictionary of what keys are currently being pressed
+        self.keys = {"right" : 0,
+                     "left" : 0}
+        self.accept("escape", sys.exit)
+        self.accept("arrow_right", self.setKey, ['right', 1])
+        self.accept("arrow_left", self.setKey, ['left', 1])
+        self.accept("arrow_right-up", self.setKey, ['right', 0])
+        self.accept("arrow_left-up", self.setKey, ['left', 0])
+
+        self.playTask = base.taskMgr.add(self.frame_loop, "frame_loop")
+        self.playTask.last = 0
+
+    # As described earlier, this simply sets a key in the self.keys dictionary to
+    # the given value
+    def setKey(self, key, val): self.keys[key] = val
+
     def frame_loop(self, task):
-        # spin in a circle
-        angleDegrees = task.time * 10.0
-        base.cam.setHpr(self.avatar_h + angleDegrees, 0, 0)
+        dt = task.time - task.last
+        task.last = task.time
+        self.update_camera(dt)
+
+        #angleDegrees = task.time * 10.0
+        #angleRadians = angleDegrees * (pi / 180)
+        #base.cam.setPos(1 * sin(angleRadians), -1.0 * cos(angleRadians), 2)
+        #base.cam.setHpr(angleDegrees, 0, 0)
+
+        #self.camera.setPos(20 * sin(angleRadians), -20.0 * cos(angleRadians), 3)
+        #self.camera.setHpr(angleDegrees, 0, 0)
+
         return task.cont
+
+    def update_camera(self, dt):
+        heading = base.cam.getHpr()
+        #print heading
+        pos = base.cam.getPos()
+        if self.keys["right"]:
+            heading[0] -= dt * TURN_RATE
+            base.cam.setHpr(heading)
+        elif self.keys["left"]:
+            heading[0] += dt * TURN_RATE
+            base.cam.setHpr(heading)
 
 if __name__ == "__main__":
     BW = BananaWorld()
