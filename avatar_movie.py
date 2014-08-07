@@ -1,7 +1,8 @@
 from __future__ import division
 from direct.showbase.ShowBase import ShowBase
 from direct.showbase.DirectObject import DirectObject
-from panda3d.core import PerspectiveLens, Point3, LineSegs, TransparencyAttrib
+from panda3d.core import WindowProperties
+from panda3d.core import Point3, LineSegs, TransparencyAttrib
 from direct.task import Task
 import pickle
 
@@ -9,7 +10,8 @@ import pickle
 class AvatarWorld(DirectObject):
     def __init__(self):
         # set to record movie
-        self.record = True
+        #self.record = True
+        self.record = False
         movie_name = '../movies/frames/avatar/avatar_1191'
 
         with open('../movies/data/bananarchy_movie_1') as variable:
@@ -61,20 +63,33 @@ class AvatarWorld(DirectObject):
         # Things that can affect camera:
         # options resolution resW resH
         base = ShowBase()
-        lens = PerspectiveLens()
+        props = WindowProperties()
+        props.setSize(600, 600)
+        base.win.requestProperties(props)
+
+        border = LineSegs()
+        border.setThickness(2.0)
+        corner = 600/100 * 5/6
+        border.moveTo(corner, 25, corner)
+        border.drawTo(corner, 25, -corner)
+        border.drawTo(-corner, 25, -corner)
+        border.drawTo(-corner, 25, corner)
+        border.drawTo(corner, 25, corner)
+        base.render.attachNewNode(border.create(True))
+        #lens = PerspectiveLens()
         # Fov is set in config for 60
-        lens.setFov(60)
+        #lens.setFov(60)
         # aspectratio should be same as window size
         # this was for 800x600
         # field of view 60 46.8264...
         # aspect ratio 1.3333
-        movie_res = [800, 600]
-        lens.setAspectRatio(800.0 / 600.0)
-        base.cam.node().setLens(lens)
+        #movie_res = [800, 600]
+        #lens.setAspectRatio(800.0 / 600.0)
+        #base.cam.node().setLens(lens)
         #print('Fov', lens.getFov())
         #print('Aspect Ratio', lens.getAspectRatio())
         # set near to be same as avatar's radius
-        lens.setNear(0.1)
+        #lens.setNear(0.1)
         #print('near camera', lens.getNear())
 
         # background color doesn't show up anyway
