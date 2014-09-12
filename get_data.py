@@ -1,11 +1,14 @@
 from bisect import bisect
 import pickle
 
+# run from save_data_script.py
+
 # stuff that is different between gobananas and bananarchy
 # Yummy - gobananas
 # YUMMY - bananarchy
-# VROBJECT_POS    banana4
-# VROBJECT_POS    banana04
+# VROBJECT_POS    banana4 - bananarchy
+# VROBJECT_POS    banana04 - gobananas
+# VROBJECT_POS    banana004 - gobananas later
 # same
 # NewTrial - gobananas & bananarchy
 # For bananarchy, heading is changing, but for gobananas, heading at
@@ -15,6 +18,9 @@ import pickle
 # for gobananas data up until now. meh.
 # now_x_res * 1024/1600
 # now_y_res * 768/900
+
+# if you get no gone_bananas, check to make sure your final time stamp
+# doesn't include the start of a new trial
 
 
 class GetData():
@@ -44,6 +50,7 @@ class GetData():
             self.save_filename = config['save_filename']
             self.get_eye_data = config['use_eye_data']
             self.lfp_data_file = config['lfp_data_file']
+            self.num_bananas = config['num_bananas']
 
         self.trial_mark = []
         self.gone_bananas = []
@@ -67,9 +74,6 @@ class GetData():
         self.now_banana_pos = []
         self.now_gone_bananas = []
         self.now_gone_ts = []
-
-        # eventually need to get this from config
-        self.num_bananas = 10
 
     def get_data_from_file(self):
         """ Try pulling out relevant data and pickling it? If we end up using the same data
@@ -104,7 +108,12 @@ class GetData():
                     self.trial_mark.append(tokens[0])
                     #print('newtrial')
                 elif tokens[2] == 'Yummy':
-                    self.gone_bananas.append(tokens[3][:8])
+                    print(tokens[3][:9])
+                    print(tokens[0])
+                    # gobananas with three digits
+                    self.gone_bananas.append(tokens[3][:9])
+                    # original gobananas
+                    #self.gone_bananas.append(tokens[3][:8])
                     self.gone_bananas_stamp.append(tokens[0])
                 elif tokens[2] == 'YUMMY':
                     #print('yummy')
@@ -167,6 +176,8 @@ class GetData():
         # have to narrow down some data after the fact, banana positions
         # and which bananas have been 'eaten'
 
+        # this is used if we are making a single frame.
+
         # need to get the file marker for start of the latest trial before
         # the time_stamp, so get value in list that is less than the
         # time_stamp.
@@ -198,14 +209,17 @@ class GetData():
         #print(len(self.now_banana_pos))
         # need to find how many, if any, bananas have disappeared so far in trial
         # since we don't know how many bananas have been eaten, we have to
-        # use the time stamp.
-        # for this we need to check if there are any values of gone_bananas
+        # use the time stamp. (This is only relevant if we are not starting at the
+        # beginning of a trial).
+        # for this we need to check that we are only getting values of gone_bananas
         # between the start of the trial and the time stamp
-        #print('gone', self.gone_bananas)
-        #print('time', self.gone_bananas_stamp)
-        #print('time_stamp', time_stamp)
+        print('gone', self.gone_bananas)
+        print('time', self.gone_bananas_stamp)
+        print('time_stamp', time_stamp)
         [self.now_gone_bananas, self.now_gone_ts] = self.bisect_data(self.gone_bananas, self.gone_bananas_stamp,
                                                                      time_stamp)
+        print('now gone', self.now_gone_bananas)
+        print('now gone ts', self.now_gone_ts)
         # now put the data in a file
         self.pickle_info()
 
@@ -239,8 +253,9 @@ class GetData():
         lfp_data = []
         with open(data_filename, 'rb') as f:
             for line in f:
-                lfp_data.append(line.split('\t'))
-        self.lfp_data = lfp_data[0]
+                #lfp_data.append(line.split('\t'))
+                lfp_data.append(line.split(','))
+        return lfp_data[0]
 
     def pickle_info(self):
         with open(self.save_filename, 'wb') as output:
@@ -262,5 +277,6 @@ class GetData():
             pickle.dump(self.eye_times, output, -1)
             #pickle.dump(self.avatar_moves, output, -1)
             if self.lfp_data:
-                pickle.dump(self.lfp_data, output, -1)
+                for data in self.lfp_data:
+                    pickle.dump(data, output, -1)
 

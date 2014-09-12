@@ -9,10 +9,15 @@ import pickle
 class BananaWorld(DirectObject):
     def __init__(self):
         # set to record movie
-        self.record = True
-        movie_name = '../movies/frames/bananarchy_1191'
+        self.record = False
+        # make sure directory exists
+        movie_name = '../movies/frames/MP_training/MP_training'
+        use_eye_data = False
+        use_lfp_data = True
+        #environ = 'original'
+        environ = 'circle'
 
-        with open('../movies/data/bananarchy_movie_1') as variable:
+        with open('../movies/data/JN_circle_array') as variable:
             res = pickle.load(variable)
             start_time = int(pickle.load(variable))
             if start_time == 0:
@@ -36,7 +41,16 @@ class BananaWorld(DirectObject):
             banana_ts = pickle.load(variable)
             eye_data = pickle.load(variable)
             eye_ts = pickle.load(variable)
-            lfp_data = pickle.load(variable)
+            lfp_data = []
+            while True:
+                try:
+                    lfp_data.append(pickle.load(variable))
+                except EOFError:
+                    break
+
+        if not use_eye_data:
+            eye_data = []
+            eye_ts = []
 
         # make zero the start time, change to seconds (from milliseconds)
         self.avatar_ht = [(float(i) - start_time) / 1000 for i in avatar_ht]
@@ -53,14 +67,21 @@ class BananaWorld(DirectObject):
         self.avatar_pos = [[float(j) for j in i] for i in avatar_pos]
 
         #print(gone_bananas[0])
-        # bananarchy data and gobananas data slightly different here
+        # bananarchy data and gobananas data slightly different here,
+        # and gobananas also changed to accomodate over 99 bananas...
         if len(gone_bananas[0]) == 7:
             self.gone_bananas = [int(i[-1:]) for i in gone_bananas]
-        else:
+        elif len(gone_bananas[0]) == 8:
             self.gone_bananas = [int(i[-2:]) for i in gone_bananas]
+        else:
+            self.gone_bananas = [int(i[-3:]) for i in gone_bananas]
 
-        self.lfp_data = [float(i) for i in lfp_data]
-        #print('size lfp', len(self.lfp_data))
+        self.lfp = []  # container for lfp traces
+        self.lfp_data = []
+        for data in lfp_data:
+            float_data = [float(i) for i in data]
+            self.lfp_data.append(float_data)
+            self.lfp.append([])
 
         #print('gone', self.gone_bananas)
         #print('bananas', banana_pos)
@@ -75,11 +96,14 @@ class BananaWorld(DirectObject):
         # field of view 60 46.8264...
         # aspect ratio 1.3333
         movie_res = [800, 600]
-        lens.setAspectRatio(800.0 / 600.0)
+        # set aspect ratio to original game
+        lens.setAspectRatio(1280.0 / 800.0)
+        #lens.setAspectRatio(800.0 / 600.0)
         base.cam.node().setLens(lens)
-        #print('Fov', lens.getFov())
-        #print('Aspect Ratio', lens.getAspectRatio())
+        print('Fov', lens.getFov())
+        print('Aspect Ratio', lens.getAspectRatio())
         # set near to be same as avatar's radius
+        # affects how close you get to the bananas
         lens.setNear(0.1)
         #print('near camera', lens.getNear())
         #base.cam.setPos(0, 0, 1)
@@ -92,8 +116,9 @@ class BananaWorld(DirectObject):
         #
         eye_factor = [movie_res[0]/resolution[0], movie_res[1]/resolution[1]]
         #print('eye factor', eye_factor)
-        fudge_factor_x = -70
-        fudge_factor_y = -60
+        # calibration not very good...
+        fudge_factor_x = 50
+        fudge_factor_y = 80
 
         self.eye_data = []
         for i in eye_data:
@@ -102,23 +127,34 @@ class BananaWorld(DirectObject):
             self.eye_data.append((x, y))
             #print self.eye_data
 
-        # for eye trace and lfp trace
+        # container for eye trace
         self.eyes = []
-        self.lfp = []
+
         #print(len(self.eye_data))
-        self.last_eye = self.eye_data.pop(0)
-        #print(len(self.eye_data))
-        self.last_eye_ts = self.eye_ts.pop(0)
-        self.gen_eye_pos = self.get_data(self.eye_data)
-        self.gen_eye_ts = self.get_data(self.eye_ts)
+        self.last_eye_ts = None
+        if use_eye_data:
+            self.last_eye = self.eye_data.pop(0)
+            #print(len(self.eye_data))
+            self.last_eye_ts = self.eye_ts.pop(0)
+            self.gen_eye_pos = self.get_data(self.eye_data)
+            self.gen_eye_ts = self.get_data(self.eye_ts)
 
         # need to adjust y position for lfp
-        self.lfp_gain = 0.1
-        self.lfp_offset = -500
-        self.last_lfp = [(self.lfp_data.pop(0) * self.lfp_gain) + self.lfp_offset]
-        self.gen_lfp = self.get_data(self.lfp_data)
-        self.last_lfp_x = 100
-        self.lfp_test = 1
+        self.lfp_gain = 0.05
+        # lfp_offset determines where each trace is on the y axis
+        lfp_offset = -500  # bottom
+        self.lfp_offset = []
+        #self.lfp_offset = -100  # top of screen
+        self.last_lfp = []
+        self.gen_lfp = []
+        for data in self.lfp_data:
+            self.lfp_offset.append(lfp_offset)
+            self.last_lfp.append([(data.pop(0) * self.lfp_gain) + lfp_offset])
+            lfp_offset += 100
+            self.gen_lfp.append(self.get_data(data))
+
+        # last_lfp_x determines where on the x axis we start the lfp trace
+        self.start_x_trace = 50
 
         points = self.avatar_pos.pop(0)
         base.cam.setPos(Point3(points[0], points[1], points[2]))
@@ -126,7 +162,7 @@ class BananaWorld(DirectObject):
         self.avatar_ht.pop(0)
         self.avatar_pt.pop(0)
 
-        self.set_environment()
+        self.set_environment(environ)
 
         #load bananas
         # if we are not starting at the beginning of the trial, some of the bananas may
@@ -154,6 +190,7 @@ class BananaWorld(DirectObject):
                 self.banana_ts.pop(i)
 
         if self.record:
+            print('make movie', movie_name)
             self.movie_task = base.movie(movie_name, 150, 30, 'png', 4)
 
         #self.accept("space", base.taskMgr.add, [self.frame_loop, "frame_loop"])
@@ -161,40 +198,40 @@ class BananaWorld(DirectObject):
 
         self.gameTask.last = 0         # Task time of the last frame
 
-        # start the clock at 1 second before the official start so has time to load
-        self.gameTask.game_time = start_time - 100
         #print('start', self.gameTask.game_time)
         #print('head start', self.avatar_ht[0])
         #print('increment', (1 / 60) * 1000000)
 
-    def set_environment(self):
+    def set_environment(self, environ):
 
-        terrainModel = base.loader.loadModel('../goBananas/models/towns/field.bam')
+        if environ == 'original':
+            terrainModel = base.loader.loadModel('../goBananas/models/play_space/field.bam')
+            skyModel = base.loader.loadModel('../goBananas/models/sky/sky.bam')
+            skyModel.setPos(Point3(0, 0, 0))
+            skyModel.setScale(1.6)
+            treeModel = base.loader.loadModel('../goBananas/models/trees/palmTree.bam')
+            treeModel.setPos(Point3(13, 13, 0))
+            treeModel.setScale(0.0175)
+            treeModel.reparentTo(render)
+            skyscraper = base.loader.loadModel('../goBananas/models/skyscraper/skyscraper.bam')
+            skyscraper.setPos(Point3(-13, -13, 0))
+            skyscraper.setScale(0.3)
+            skyscraper.reparentTo(render)
+            stLightModel = base.loader.loadModel('../goBananas/models/streetlight/streetlight.bam')
+            stLightModel.setPos(Point3(-13, 13, 0))
+            stLightModel.setScale(0.75)
+            stLightModel.reparentTo(render)
+        elif environ == 'circle':
+            terrainModel = base.loader.loadModel('../goBananas/models/new/round_courtyard2.bam')
+            skyModel = base.loader.loadModel('../goBananas/models/new/sky_kahana.bam')
+            skyModel.setPos(Point3(0, 0, -0.5))
+            skyModel.setScale(Point3(2, 2, 4))
+
         terrainModel.setPos(Point3(0, 0, 0))
         terrainModel.reparentTo(render)
         #print 'terrain', terrainModel.getPos()
-        skyModel = base.loader.loadModel('../goBananas/models/sky/sky.bam')
-        skyModel.setPos(Point3(0, 0, 0))
-        skyModel.setScale(1.6)
         skyModel.reparentTo(render)
         #print 'sky', skyModel.getPos()
-        treeModel = base.loader.loadModel('../goBananas/models/trees/palmTree.bam')
-        treeModel.setPos(Point3(13, 13, 0))
-        treeModel.setScale(0.0175)
-        treeModel.reparentTo(render)
-        skyscraper = base.loader.loadModel('../goBananas/models/skyscraper/skyscraper.bam')
-        skyscraper.setPos(Point3(-13, -13, 0))
-        skyscraper.setScale(0.3)
-        skyscraper.reparentTo(render)
-        stLightModel = base.loader.loadModel('../goBananas/models/streetlight/streetlight.bam')
-        stLightModel.setPos(Point3(-13, 13, 0))
-        stLightModel.setScale(0.75)
-        stLightModel.reparentTo(render)
-        windmillModel = base.loader.loadModel('../goBananas/models/windmill/windmill.bam')
-        windmillModel.setPos(Point3(13, -13, 0))
-        windmillModel.setScale(0.2)
-        windmillModel.setH(45)
-        windmillModel.reparentTo(render)
 
         self.eye_spot = base.loader.loadModel("models/ball")
         #eye_texture = base.loader.loadTexture('textures/spotlight.png')
@@ -214,8 +251,10 @@ class BananaWorld(DirectObject):
             self.update_avt_h(task.time)
         if len(self.banana_ts) > 0 and self.banana_ts[0] < task.time:
             self.update_banana()
-        self.update_eye(task.time)
-        self.update_LFP(dt)
+        if self.last_eye_ts:
+            self.update_eye(task.time)
+        for ind, last_lfps in enumerate(self.last_lfp):
+            self.update_LFP(dt, last_lfps, self.lfp[ind], self.lfp_offset[ind], self.gen_lfp[ind])
         return task.cont
 
     def get_data(self, data):
@@ -247,40 +286,40 @@ class BananaWorld(DirectObject):
 
     def update_banana(self):
         #print(self.banana_ts[0])
-        #print('gone', self.gone_bananas[0])
+        print('gone', self.gone_bananas[0])
         self.bananaModel[self.gone_bananas.pop(0)].stash()
         self.banana_ts.pop(0)
 
-    def update_LFP(self, dt):
+    def update_LFP(self, dt, last_lfp, lfp_trace, offset, gen_lfp):
         # lfp data is taken at 1000Hz, and dt is the number of seconds since
         # the last frame was flipped, so plot number of points = dt * 1000
         lfp = LineSegs()
         lfp.setThickness(1.0)
         #print('points to plot', int(dt * 1000))
-        self.lfp_test += int(dt * 1000)
+        #self.lfp_test += int(dt * 1000)
         #print('points so far', self.lfp_test)
 
         for i in range(int(dt * 1000)):
             try:
-                self.last_lfp.append((next(self.gen_lfp) * self.lfp_gain) + self.lfp_offset)
-                #self.last_lfp_x += 0.05
+                last_lfp.append((next(gen_lfp) * self.lfp_gain) + offset)
+                #last_lfp_x += 0.05
                 # only plotting 200 data points at a time
-                while len(self.last_lfp) > 3500:
-                    self.last_lfp.pop(0)
+                while len(last_lfp) > 3500:
+                    last_lfp.pop(0)
             except StopIteration:
                 #print('done with lfp')
                 break
 
-        if self.lfp:
-            self.lfp[0].removeNode()
-            self.lfp.pop(0)
-        lfp.moveTo(self.last_lfp_x, 55, self.last_lfp[0])
-        x = self.last_lfp_x
-        for i in self.last_lfp:
+        if lfp_trace:
+            lfp_trace[0].removeNode()
+            lfp_trace.pop(0)
+        lfp.moveTo(self.start_x_trace, 55, last_lfp[0])
+        x = self.start_x_trace
+        for i in last_lfp:
             x += .1
             lfp.drawTo(x, 55, i)
         node = pixel2d.attachNewNode(lfp.create())
-        self.lfp.append(node)
+        lfp_trace.append(node)
 
         # get rid of lfp trace from a while ago..
         #while len(self.lfp) > 50:

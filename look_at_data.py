@@ -2,16 +2,15 @@ from __future__ import division
 import pickle
 
 # script to look at data from pickle file without having to deal with Panda3d
-with open('../movies/data/bananarchy_movie_1') as variable:
+with open('../movies/data/MP_training') as variable:
     res = pickle.load(variable)
     start_time = int(pickle.load(variable))
     banana_pos = pickle.load(variable)
-    #print(banana_pos)
+    #print('banana positions', banana_pos)
     banana_h = pickle.load(variable)
-    #print(banana_h)
+    #print('banana directions', banana_h)
     gone_bananas = pickle.load(variable)
-    #print(gone_bananas)
-    #print(int(gone_bananas[0][-2:]))
+    #print('gone bananas', gone_bananas)
     avatar_h = pickle.load(variable)
     #print(avatar_h)
     avatar_pos = pickle.load(variable)
@@ -21,7 +20,12 @@ with open('../movies/data/bananarchy_movie_1') as variable:
     banana_ts = pickle.load(variable)
     eye_data = pickle.load(variable)
     eye_ts = pickle.load(variable)
-    lfp_data = pickle.load(variable)
+    lfp_data = []
+    while True:
+        try:
+            lfp_data.append(pickle.load(variable))
+        except EOFError:
+            break
 
 # make zero the start time, change to seconds (from milliseconds)
 new_avatar_ht = [(float(i) - start_time) / 1000 for i in avatar_ht]
@@ -37,11 +41,17 @@ new_avatar_pos = [[float(j) for j in i] for i in avatar_pos]
 
 #print(gone_bananas[0])
 # bananarchy data and gobananas data slightly different here
+# and gobananas started using 3 digits after a while...
+#print(gone_bananas[0])
 if len(gone_bananas[0]) == 7:
     new_gone_bananas = [int(i[-1:]) for i in gone_bananas]
-else:
+elif len(gone_bananas[0]) == 8:
     new_gone_bananas = [int(i[-2:]) for i in gone_bananas]
+elif len(gone_bananas[0]) == 9:
+    new_gone_bananas = [int(i[-3:]) for i in gone_bananas]
 
+print('total number of bananas', len(banana_h))
+print('bananas to be eaten', new_gone_bananas)
 new_lfp_data = [float(i) for i in lfp_data]
 movie_res = [800, 600]
 eye_factor = [movie_res[0]/resolution[0], movie_res[1]/resolution[1]]

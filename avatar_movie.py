@@ -14,7 +14,7 @@ class AvatarWorld(DirectObject):
         self.record = False
         movie_name = '../movies/frames/avatar/avatar_1191'
 
-        with open('../movies/data/bananarchy_movie_1') as variable:
+        with open('../movies/data/JN_circle_array') as variable:
             res = pickle.load(variable)
             start_time = int(pickle.load(variable))
             if start_time == 0:
