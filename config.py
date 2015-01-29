@@ -1,4 +1,4 @@
-use_eye_data = True
+use_eye_data = False
 # data_filename = '../play_data/giz_short.txt'
 # start_time = 1389990322200
 # time_stamp = 1389990340044
@@ -20,14 +20,33 @@ use_eye_data = True
 # time_stamp = 1410389763594
 # save_filename = '../movies/data/JN_circle_array'
 
-data_filename = '../data_goBananas/MP_14_09_08_11_07/log.txt'
+#data_filename = '../data_goBananas/GR_14_10_01_14_02/log.txt'
+# for matching lfp data from Mike
+#lfp_data_file = []
+#start_time = 1412197338128
+#time_stamp = 1412197459069
+#save_filename = '../movies/data/GR_training'
+# how many bananas are on the field
+#num_bananas = 200
+
+data_filename = '../data_goBananas/GR_15_01_28_13_00/log.txt'
 # for matching lfp data from Mike
 lfp_data_file = []
-start_time = 1410199634229
-time_stamp = 1410199727400
-save_filename = '../movies/data/MP_training'
+start_time = 1422478814411
+time_stamp = 1422478853987
+save_filename = '../movies/data/GR_training2'
 # how many bananas are on the field
-num_bananas = 200
+num_bananas = 25
+
+# JN starting memory training, still gobananas, alpha banana
+#data_filename = '../data_goBananas/JN_15_01_26_14_25/log.txt'
+#lfp_data_file = []
+#start_time = 1422311115321 
+#time_stamp = 1422311215873
+#save_filename = '../movies/data/JN_goAlpha'
+# how many bananas are on the field
+#num_bananas = 4
+
 
 #data_filename = '../data_bananarchy/session_1191/log.txt'
 #start_time = 1370018952717
