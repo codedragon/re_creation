@@ -106,12 +106,13 @@ class GetData():
                     break
                 if tokens[2] == 'NewTrial':
                     self.trial_mark.append(tokens[0])
-                    #print('newtrial')
+                    print('newtrial')
                 elif tokens[2] == 'Yummy':
-                    print(tokens[3][:9])
+                    print('everything', tokens[3][:13])
+                    print('banana', tokens[3][4:10])
                     print(tokens[0])
                     # gobananas with three digits
-                    self.gone_bananas.append(tokens[3][:9])
+                    self.gone_bananas.append(tokens[3][:13])
                     # original gobananas
                     #self.gone_bananas.append(tokens[3][:8])
                     self.gone_bananas_stamp.append(tokens[0])
@@ -129,14 +130,28 @@ class GetData():
                         #    print('positive', tokens[4])
                 elif len(tokens) > 3:
                     #print('ok')
-                    if tokens[3][:6] == 'banana':
-                        #print('banana')
+                    #if tokens[3][:6] == 'banana':
+                    if tokens[3][4:10] == 'banana':
+                        # print('banana')
                         if tokens[2] == 'VROBJECT_POS':
+                            position = tokens[4][tokens[4].find('(') + 1:tokens[4].find(')')].split(',')
+                            #print('appending', position)
+                            if position == ['0', ' 0', ' 1']:
+                                print 'skip'
+                            else:
+                                self.banana_pos.append(position)
+                                print('yes', position)
+                                # going to make a hack. not using banana heading currently, so going to save the banana
+                                # number there instead.
+                                self.banana_head.append(tokens[3][:13])
                             #print('append bananas')
-                            #print(tokens[4])
-                            self.banana_pos.append(tokens[4][tokens[4].find('(') + 1:tokens[4].find(')')].split(','))
+                            #print(tokens[3][:13], tokens[4])
+                            # saving banana positions.
+                            #self.banana_pos.append(tokens[4][tokens[4].find('(') + 1:tokens[4].find(')')].split(','))
                             #self.banana_pos = banana_pos.split(',')
+
                         elif tokens[2] == 'VROBJECT_HEADING' and len(self.banana_head) < self.num_bananas:
+                            print('banana heading', tokens[4])
                             # for the moment, we aren't worried about the rotating bananas in bananarchy
                             # simply take the first heading in file, and use that.
                             self.banana_head.append(tokens[4])

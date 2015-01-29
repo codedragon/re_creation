@@ -33,7 +33,7 @@ data_filename = '../data_goBananas/GR_15_01_28_13_00/log.txt'
 # for matching lfp data from Mike
 lfp_data_file = []
 start_time = 1422478814411
-time_stamp = 1422478853987
+time_stamp = 1422478999138
 save_filename = '../movies/data/GR_training2'
 # how many bananas are on the field
 num_bananas = 25
