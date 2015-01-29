@@ -19,44 +19,45 @@ import pickle
 # now_x_res * 1024/1600
 # now_y_res * 768/900
 
-# if you get no gone_bananas, check to make sure your final time stamp
+# if you get no fruit_eaten, check to make sure your final time stamp
 # doesn't include the start of a new trial
 
 
 class GetData():
     def __init__(self, config_file=None):
         print('This may take a while, depending on the size of the data file')
-        # if we just want data between 2 time stamps, use start_time and time_stamp as beginning
-        # and end, otherwise, will only get avatar data for time_stamp. If time_stamp is at the
-        # beginning of a trial, need to
+        # if we just want data between 2 time stamps, use start_time and end_time as beginning
+        # and end, otherwise, will only get avatar data for end_time.
 
         if config_file is None:
             print('default data')
             self.data_filename = '../play_data/giz_short.txt'
             #self.start_time = 0
             self.start_time = 1389990322200
-            #self.time_stamp = 1389990270636
-            self.time_stamp = 1389990322667
+            #self.end_time = 1389990270636
+            self.end_time = 1389990322667
             self.save_filename = '../play_data/test_data'
             self.get_eye_data = False
             self.lfp_data_file = []
+            self.fruit_list = ['banana']
         else:
             print('data from file')
             config = {}
             execfile(config_file, config)
             self.data_filename = config['data_filename']
             self.start_time = config['start_time']
-            self.time_stamp = config['time_stamp']
+            self.end_time = config['time_stamp']
             self.save_filename = config['save_filename']
             self.get_eye_data = config['use_eye_data']
             self.lfp_data_file = config['lfp_data_file']
-            self.num_bananas = config['num_bananas']
+            self.num_fruit = config['num_fruit']
+            self.fruit_list = config['fruit_list']
 
         self.trial_mark = []
-        self.gone_bananas = []
-        self.gone_bananas_stamp = []
-        self.banana_pos = []
-        self.banana_head = []
+        self.fruit_eaten = []
+        self.fruit_eaten_stamp = []
+        self.fruit_pos = []
+        self.fruit_head = []
         self.avatar_pos = []
         self.avatar_head = []
         self.avatar_ptime = []
@@ -71,8 +72,8 @@ class GetData():
 
         # stuff that will have to be condensed, since we don't know which trial
         # we are getting data from until the end
-        self.now_banana_pos = []
-        self.now_gone_bananas = []
+        self.now_fruit_pos = []
+        self.now_fruit_eaten = []
         self.now_gone_ts = []
 
     def get_data_from_file(self):
@@ -95,31 +96,32 @@ class GetData():
         first = True
         with open(self.data_filename, 'rb') as f:
             for line in f:
-                tokens = line[:-1].split('\t')
-                # stop looking at data once we get to the time_stamp
+                tokens = line[:-1].rstrip('\r').split('\t')
+                # stop looking at data once we get to the end_time
                 #print(len(tokens))
                 if first:
                     self.resolution = [tokens[3], tokens[4]]
                     first = False
-                if int(tokens[0]) > self.time_stamp:
+                if int(tokens[0]) > self.end_time:
                     #print(tokens[0])
                     break
                 if tokens[2] == 'NewTrial':
                     self.trial_mark.append(tokens[0])
-                    print('newtrial')
+                    print('new trial')
                 elif tokens[2] == 'Yummy':
-                    print('everything', tokens[3][:13])
-                    print('banana', tokens[3][4:10])
-                    print(tokens[0])
-                    # gobananas with three digits
-                    self.gone_bananas.append(tokens[3][:13])
+                    print('really everything', tokens[3])
+                    #print('just fruit name', tokens[3][:-4])
+                    #print('banana', tokens[3][4:10])
+                    #print('time eaten', tokens[0])
+                    self.fruit_eaten.append(tokens[3])
                     # original gobananas
-                    #self.gone_bananas.append(tokens[3][:8])
-                    self.gone_bananas_stamp.append(tokens[0])
+                    #self.fruit_eaten.append(tokens[3][:8])
+                    self.fruit_eaten_stamp.append(tokens[0])
                 elif tokens[2] == 'YUMMY':
+                    # for original bananarchy
                     #print('yummy')
-                    self.gone_bananas.append(tokens[3][:7])
-                    self.gone_bananas_stamp.append(tokens[0])
+                    self.fruit_eaten.append(tokens[3][:7])
+                    self.fruit_eaten_stamp.append(tokens[0])
                 elif int(tokens[0]) > self.start_time and tokens[2] == 'EyeData':
                     if self.get_eye_data:
                         self.eye_data.append((tokens[3], tokens[4]))
@@ -130,31 +132,41 @@ class GetData():
                         #    print('positive', tokens[4])
                 elif len(tokens) > 3:
                     #print('ok')
+                    #print('how many columns', len(tokens))
+                    #print('fruit column', tokens[3][:-3])
                     #if tokens[3][:6] == 'banana':
-                    if tokens[3][4:10] == 'banana':
-                        # print('banana')
+                    #if tokens[3][4:10] == 'banana':
+                    if tokens[3][:-3] in self.fruit_list:
+                        #print('how many columns', len(tokens))
+                        print('this fruit', tokens[3][:-3], tokens[2], tokens[0])
                         if tokens[2] == 'VROBJECT_POS':
                             position = tokens[4][tokens[4].find('(') + 1:tokens[4].find(')')].split(',')
-                            #print('appending', position)
+                            print('fruit', tokens[3], position)
                             if position == ['0', ' 0', ' 1']:
                                 print 'skip'
                             else:
-                                self.banana_pos.append(position)
+                                self.fruit_pos.append(position)
                                 print('yes', position)
                                 # going to make a hack. not using banana heading currently, so going to save the banana
                                 # number there instead.
-                                self.banana_head.append(tokens[3][:13])
+                                self.fruit_head.append(tokens[3])
                             #print('append bananas')
                             #print(tokens[3][:13], tokens[4])
                             # saving banana positions.
-                            #self.banana_pos.append(tokens[4][tokens[4].find('(') + 1:tokens[4].find(')')].split(','))
-                            #self.banana_pos = banana_pos.split(',')
+                            #self.fruit_pos.append(tokens[4][tokens[4].find('(') + 1:tokens[4].find(')')].split(','))
+                            #self.fruit_pos = fruit_pos.split(',')
 
-                        elif tokens[2] == 'VROBJECT_HEADING' and len(self.banana_head) < self.num_bananas:
+                        elif tokens[2] == 'VROBJECT_HEADING' and len(self.fruit_head) < self.num_fruit:
                             print('banana heading', tokens[4])
                             # for the moment, we aren't worried about the rotating bananas in bananarchy
                             # simply take the first heading in file, and use that.
-                            self.banana_head.append(tokens[4])
+                            self.fruit_head.append(tokens[4])
+                        elif tokens[2] == "VROBJECT_HPR":
+                            # this is where the heading will be, if it isn't in its own space.
+                            # need to make sure we are just doing this once, I think.
+                            pass
+                            #self.fruit_head.append
+
                     if int(tokens[0]) > self.start_time and tokens[3] == 'PandaEPL_avatar':
                         # if we are doing a scene, just need to collect navigation from last position
                         # (generally when last banana is eaten), otherwise collect it all.
@@ -184,9 +196,9 @@ class GetData():
             self.avatar_head = [heading]
 
         #print(self.trial_mark)
-        #print('length banana head', len(self.banana_head))
+        #print('length banana head', len(self.fruit_head))
 
-    def get_data_for_time_stamp(self, time_stamp):
+    def get_data_for_end_time(self, end_time):
         # because we didn't know which trial the timestamp would be in,
         # have to narrow down some data after the fact, banana positions
         # and which bananas have been 'eaten'
@@ -194,55 +206,55 @@ class GetData():
         # this is used if we are making a single frame.
 
         # need to get the file marker for start of the latest trial before
-        # the time_stamp, so get value in list that is less than the
-        # time_stamp.
+        # the end_time, so get value in list that is less than the
+        # end_time.
         # convert from strings, trial mark is beginning of a trial
         self.trial_mark = map(int, self.trial_mark)
-        self.gone_bananas_stamp = map(int, self.gone_bananas_stamp)
+        self.fruit_eaten_stamp = map(int, self.fruit_eaten_stamp)
         #print(self.trial_mark)
-        # find the trial_mark that is closest too, but not after the time_stamp
-        i = bisect(self.trial_mark, time_stamp) - 1
+        # find the trial_mark that is closest too, but not after the end_time
+        i = bisect(self.trial_mark, end_time) - 1
         self.now_trial = self.trial_mark[i]
         #print('now trial', self.now_trial)
         #print('i', i)
         # Since we stop taking data at our ending time stamp, can just get all banana
         # positions after our trial starts. To get first banana for this trial, multiply
         # current trial number times the number of bananas we put out for each trial.
-        #print(len(self.banana_pos)/self.num_bananas)
+        #print(len(self.fruit_pos)/self.num_fruit)
         #print(len(self.trial_mark))
         # ugh, kiril has 2 sets of positions for the first 10 bananas.
-        if len(self.banana_pos)/self.num_bananas > len(self.trial_mark):
+        if len(self.fruit_pos)/self.num_fruit > len(self.trial_mark):
             #print('kiril')
-            first_banana = (i * self.num_bananas) + self.num_bananas
+            first_banana = (i * self.num_fruit) + self.num_fruit
         else:
-            first_banana = i * self.num_bananas
+            first_banana = i * self.num_fruit
         #print('first banana', first_banana)
-        #print(self.num_bananas)
-        #print(self.banana_pos)
-        self.now_banana_pos = self.banana_pos[first_banana:]
-        #print('banana positions', self.now_banana_pos)
-        #print(len(self.now_banana_pos))
+        #print(self.num_fruit)
+        #print(self.fruit_pos)
+        self.now_fruit_pos = self.fruit_pos[first_banana:]
+        #print('banana positions', self.now_fruit_pos)
+        #print(len(self.now_fruit_pos))
         # need to find how many, if any, bananas have disappeared so far in trial
         # since we don't know how many bananas have been eaten, we have to
         # use the time stamp. (This is only relevant if we are not starting at the
         # beginning of a trial).
-        # for this we need to check that we are only getting values of gone_bananas
+        # for this we need to check that we are only getting values of fruit_eaten
         # between the start of the trial and the time stamp
-        print('gone', self.gone_bananas)
-        print('time', self.gone_bananas_stamp)
-        print('time_stamp', time_stamp)
-        [self.now_gone_bananas, self.now_gone_ts] = self.bisect_data(self.gone_bananas, self.gone_bananas_stamp,
-                                                                     time_stamp)
-        print('now gone', self.now_gone_bananas)
+        print('gone', self.fruit_eaten)
+        print('time', self.fruit_eaten_stamp)
+        print('end_time', end_time)
+        [self.now_fruit_eaten, self.now_gone_ts] = self.bisect_data(self.fruit_eaten, self.fruit_eaten_stamp,
+                                                                     end_time)
+        print('now gone', self.now_fruit_eaten)
         print('now gone ts', self.now_gone_ts)
         # now put the data in a file
         self.pickle_info()
 
-    def bisect_data(self, full_data, time_data, time_stamp):
+    def bisect_data(self, full_data, time_data, end_time):
         # given a big block of data, slice it so we are getting just the data from the beginning
         # of the trial to the current time stamp
         i = bisect(time_data, self.now_trial)
-        j = bisect(time_data, time_stamp)
+        j = bisect(time_data, end_time)
         #print('time_data', time_data)
         #print('now_trial', self.now_trial)
         #print('i', i)
@@ -276,11 +288,11 @@ class GetData():
         with open(self.save_filename, 'wb') as output:
             pickle.dump(self.resolution, output, -1)
             pickle.dump(self.start_time, output, -1)
-            pickle.dump(self.now_banana_pos, output, -1)
+            pickle.dump(self.now_fruit_pos, output, -1)
             # banana heading doesn't change, only in gobananas once.
             # will be ugly if I try this on bananarchy data, though...
-            pickle.dump(self.banana_head, output, -1)
-            pickle.dump(self.now_gone_bananas, output, -1)
+            pickle.dump(self.fruit_head, output, -1)
+            pickle.dump(self.now_fruit_eaten, output, -1)
             pickle.dump(self.avatar_head, output, -1)
             pickle.dump(self.avatar_pos, output, -1)
             # time variables
