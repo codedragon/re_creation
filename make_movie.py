@@ -13,13 +13,13 @@ class BananaWorld(DirectObject):
         # set to record movie
         self.record = True
         # make sure directory exists
-        movie_name = '../movies/frames/GR_training2/GR_training2'
+        movie_name = '../movies/frames/JN_goAlpha/JN_goAlpha'
         use_eye_data = False
         use_lfp_data = False
         environ = 'original'
         #environ = 'circle'
 
-        with open('../movies/data/GR_training2') as variable:
+        with open('../movies/data/JN_goAlpha') as variable:
             res = pickle.load(variable)
             start_time = int(pickle.load(variable))
             if start_time == 0:
@@ -27,12 +27,13 @@ class BananaWorld(DirectObject):
                       rather than zero for the starting time"""
                 raise StartError(message)
             banana_pos = pickle.load(variable)
-            #print(banana_pos)
-            banana_h = pickle.load(variable)
+            print(banana_pos)
+
+            #banana_h = pickle.load(variable)
             #print(banana_h)
             gone_bananas = pickle.load(variable)
 
-            #print(gone_bananas)
+            print(gone_bananas)
             #print(int(gone_bananas[0][-2:]))
             avatar_h = pickle.load(variable)
             #print(avatar_h)
@@ -58,11 +59,11 @@ class BananaWorld(DirectObject):
         # hack! not using banana_h for heading, making that up. banana_h is now the
         # key to which banana is at which position, because not saving in any particular order
 
-        if hack:
-            banana_key = banana_h
-            banana_h = [random.choice(range(360)) for i in range(num_bananas)]
-        print banana_h
-        print banana_key
+        #if hack:
+        #    banana_key = banana_h
+        #    banana_h = [random.choice(range(360)) for i in range(num_bananas)]
+        #print banana_h
+        #print banana_key
         # make zero the start time, change to seconds (from milliseconds)
         self.avatar_ht = [(float(i) - start_time) / 1000 for i in avatar_ht]
         self.avatar_pt = [(float(i) - start_time) / 1000 for i in avatar_pt]
@@ -184,15 +185,19 @@ class BananaWorld(DirectObject):
         # the correct banana
 
         #bananas = range(len(banana_h))
+
         self.bananaModel = []
 
         for i, k in enumerate(self.banana_key):
             print('i', i)
+            print('k', k)
             self.bananaModel.append(base.loader.loadModel('../goBananas/models/bananas/banana.bam'))
+            position = banana_pos[k]['position']
+            heading = banana_pos[k]['heading']
             self.bananaModel[i].setPos(
-                Point3(float(banana_pos[i][0]), float(banana_pos[i][1]), float(banana_pos[i][2])))
+                Point3(float(position[i][0]), float(position[i][1]), float(position[i][2])))
             self.bananaModel[i].setScale(0.5)
-            self.bananaModel[i].setH(float(banana_h[i]))
+            self.bananaModel[i].setH(float(heading))
             self.bananaModel[i].reparentTo(render)
 
         #print('start', start_time)
@@ -259,6 +264,7 @@ class BananaWorld(DirectObject):
         task.last = task.time
         #print('time', task.time)
         # check to see if anything has happened.
+        # there is a position and heading for every time stamp for the avatar.
         if len(self.avatar_pt) > 0:
             self.update_avt_p(task.time)
         if len(self.avatar_ht) > 0:
