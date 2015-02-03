@@ -27,12 +27,12 @@ class BananaWorld(DirectObject):
                       rather than zero for the starting time"""
                 raise StartError(message)
             banana_pos = pickle.load(variable)
-            #print(banana_pos)
+            print('positions', banana_pos)
             banana_h = pickle.load(variable)
             #print(banana_h)
             gone_bananas = pickle.load(variable)
 
-            #print(gone_bananas)
+            print('gone', gone_bananas)
             #print(int(gone_bananas[0][-2:]))
             avatar_h = pickle.load(variable)
             #print(avatar_h)
@@ -77,7 +77,7 @@ class BananaWorld(DirectObject):
         self.avatar_h = [float(i) for i in avatar_h]
         self.avatar_pos = [[float(j) for j in i] for i in avatar_pos]
 
-        #print(gone_bananas[0])
+        print(gone_bananas[0])
         # bananarchy data and gobananas data slightly different here,
         # and gobananas also changed to accomodate over 99 bananas...
         if len(gone_bananas[0]) == 7:
@@ -185,6 +185,7 @@ class BananaWorld(DirectObject):
 
         #bananas = range(len(banana_h))
         self.bananaModel = []
+        print('banana positions', banana_pos)
 
         for i, k in enumerate(self.banana_key):
             print('i', i)
@@ -263,7 +264,7 @@ class BananaWorld(DirectObject):
             self.update_avt_p(task.time)
         if len(self.avatar_ht) > 0:
             self.update_avt_h(task.time)
-        if len(self.banana_ts) > 0 and self.banana_ts[0] < task.time - 0.5:
+        if len(self.banana_ts) > 0 and self.banana_ts[0] < task.time - 1.8:
             self.update_banana()
         if self.last_eye_ts:
             self.update_eye(task.time)

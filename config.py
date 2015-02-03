@@ -29,26 +29,27 @@ use_eye_data = False
 # how many bananas are on the field
 #num_fruit = 200
 
-# data_filename = '../data_goBananas/GR_15_01_28_13_00/log.txt'
+data_filename = '../data_goBananas/GR_15_01_30_12_52/log.txt'
 # # for matching lfp data from Mike
-# lfp_data_file = []
-# start_time = 1422478814411
-# time_stamp = 1422478999138
-# save_filename = '../movies/data/GR_training2'
-# # how many bananas are on the field
-# num_fruit = 25
+lfp_data_file = []
+start_time = 1422651131729
+time_stamp = 1422651375899
+save_filename = '../movies/data/GR_training2'
+# how many bananas are on the field
+num_fruit = 15
+fruit_list = ['old_banana']
 
 # JN starting memory training, still gobananas, alpha banana
 #data_filename = '../data_goBananas/JN_15_01_26_14_25/log.txt'
-data_filename = '../goBananas/Data/JN/JN_15_01_26_14_25/log.txt'
-lfp_data_file = []
-start_time = 1422311115321
-time_stamp = 1422311215873
+#data_filename = '../goBananas/Data/JN/JN_15_01_26_14_25/log.txt'
+#lfp_data_file = []
+#start_time = 1422311115321
+#time_stamp = 1422311215873
 #save_filename = '../movies/data/JN_goAlpha'
-save_filename = '../movie_data/JN_goAlpha'
+#save_filename = '../movie_data/JN_goAlpha'
 # how many bananas are on the field
-num_fruit = 4
-fruit_list = ['old_banana', 'banana', 'cherry']
+#num_fruit = 4
+#fruit_list = ['old_banana', 'banana', 'cherry']
 
 #data_filename = '../data_bananarchy/session_1191/log.txt'
 #start_time = 1370018952717

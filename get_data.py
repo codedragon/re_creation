@@ -215,8 +215,8 @@ class GetData():
         # find the trial_mark that is closest too, but not after the end_time
         i = bisect(self.trial_mark, end_time) - 1
         self.now_trial = self.trial_mark[i]
-        #print('now trial', self.now_trial)
-        #print('i', i)
+        print('now trial', self.now_trial)
+        print('i', i)
         # Since we stop taking data at our ending time stamp, can just get all banana
         # positions after our trial starts. To get first banana for this trial, multiply
         # current trial number times the number of bananas we put out for each trial.
@@ -228,12 +228,14 @@ class GetData():
             first_banana = (i * self.num_fruit) + self.num_fruit
         else:
             first_banana = i * self.num_fruit
-        #print('first banana', first_banana)
+        print('first banana', first_banana)
         #print(self.num_fruit)
         #print(self.fruit_pos)
-        self.now_fruit_pos = self.fruit_pos[first_banana:]
-        #print('banana positions', self.now_fruit_pos)
-        #print(len(self.now_fruit_pos))
+        #self.now_fruit_pos = self.fruit_pos[first_banana:]
+        # assume we are starting at the beginning of a trial
+        self.now_fruit_pos = self.fruit_pos[:]
+        print('banana positions', self.now_fruit_pos)
+        print(len(self.now_fruit_pos))
         # need to find how many, if any, bananas have disappeared so far in trial
         # since we don't know how many bananas have been eaten, we have to
         # use the time stamp. (This is only relevant if we are not starting at the
@@ -255,10 +257,10 @@ class GetData():
         # of the trial to the current time stamp
         i = bisect(time_data, self.now_trial)
         j = bisect(time_data, end_time)
-        #print('time_data', time_data)
-        #print('now_trial', self.now_trial)
-        #print('i', i)
-        #print('j', j)
+        print('time_data', time_data)
+        print('now_trial', self.now_trial)
+        print('i', i)
+        print('j', j)
         if j > i:
             new_list = full_data[i:j]
             new_times = time_data[i:j]
