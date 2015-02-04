@@ -42,8 +42,14 @@ use_eye_data = False
 data_filename = '../data_goBananas/JN_15_01_26_14_25/log.txt'
 #data_filename = '../goBananas/Data/JN/JN_15_01_26_14_25/log.txt'
 lfp_data_file = []
+# if start_time and trial start are the same, can just make trial start None
+# if don't want data from the beginning of trial, the stamps will be different
+# need to know where the beginning of that trial is so that we get the correct
+# positions for that trial. If doing one frame, start_time and end_time will be
+# the same.
+trial_start = None
 start_time = 1422311115321
-time_stamp = 1422311215873
+end_time = 1422311215873
 save_filename = '../movies/data/JN_goAlpha'
 #save_filename = '../movie_data/JN_goAlpha'
 # how many bananas are on the field

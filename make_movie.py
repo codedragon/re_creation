@@ -26,14 +26,12 @@ class BananaWorld(DirectObject):
                 message = """This data is for a single frame, please use a time_stamp
                       rather than zero for the starting time"""
                 raise StartError(message)
-            banana_pos = pickle.load(variable)
-            print(banana_pos)
-
-            #banana_h = pickle.load(variable)
-            #print(banana_h)
-            gone_bananas = pickle.load(variable)
-
-            print(gone_bananas)
+            self.fruit_pos = pickle.load(variable)
+            #print('fruit positions', fruit_pos)
+            trial_mark = pickle.load(variable)
+            fruit_status = pickle.load(variable)
+            #print fruit_status
+            fruit_status_ts = pickle.load(variable)
             #print(int(gone_bananas[0][-2:]))
             avatar_h = pickle.load(variable)
             #print(avatar_h)
@@ -41,7 +39,7 @@ class BananaWorld(DirectObject):
             #print('before', avatar_pos)
             avatar_ht = pickle.load(variable)
             avatar_pt = pickle.load(variable)
-            banana_ts = pickle.load(variable)
+
             eye_data = pickle.load(variable)
             eye_ts = pickle.load(variable)
             lfp_data = []
@@ -54,24 +52,17 @@ class BananaWorld(DirectObject):
         if not use_eye_data:
             eye_data = []
             eye_ts = []
-        num_bananas = len(banana_pos)
-        #print test
-        # hack! not using banana_h for heading, making that up. banana_h is now the
-        # key to which banana is at which position, because not saving in any particular order
 
-        #if hack:
-        #    banana_key = banana_h
-        #    banana_h = [random.choice(range(360)) for i in range(num_bananas)]
-        #print banana_h
-        #print banana_key
         # make zero the start time, change to seconds (from milliseconds)
         self.avatar_ht = [(float(i) - start_time) / 1000 for i in avatar_ht]
         self.avatar_pt = [(float(i) - start_time) / 1000 for i in avatar_pt]
-        self.banana_ts = [(float(i) - start_time) / 1000 for i in banana_ts]
+        self.fruit_status_ts = [(float(i) - start_time) / 1000 for i in fruit_status_ts]
         self.eye_ts = [(float(i) - start_time) / 1000 for i in eye_ts]
+        self.trial_mark = [(float(i) - start_time) / 1000 for i in trial_mark]
         # and now make it official...
         start_time = 0
 
+        print self.trial_mark
         # non-time variables still need to be converted from strings
         #print(res)
         resolution = [int(i) for i in res]
@@ -81,16 +72,15 @@ class BananaWorld(DirectObject):
         #print(gone_bananas[0])
         # bananarchy data and gobananas data slightly different here,
         # and gobananas also changed to accomodate over 99 bananas...
-        if len(gone_bananas[0]) == 7:
-            self.gone_bananas = [int(i[-1:]) for i in gone_bananas]
-        elif len(gone_bananas[0]) == 8:
-            self.gone_bananas = [int(i[-2:]) for i in gone_bananas]
-        else:
-            self.gone_bananas = [int(i[-3:]) for i in gone_bananas]
-        if hack:
-            self.banana_key = [int(i[-3:]) for i in banana_key]
+        # if len(gone_bananas[0]) == 7:
+        #     self.gone_bananas = [int(i[-1:]) for i in gone_bananas]
+        # elif len(gone_bananas[0]) == 8:
+        #     self.gone_bananas = [int(i[-2:]) for i in gone_bananas]
+        # else:
+        #     self.gone_bananas = [int(i[-3:]) for i in gone_bananas]
+        # if hack:
+        #     self.banana_key = [int(i[-3:]) for i in banana_key]
 
-        print self.gone_bananas
         self.lfp = []  # container for lfp traces
         self.lfp_data = []
         for data in lfp_data:
@@ -98,8 +88,6 @@ class BananaWorld(DirectObject):
             self.lfp_data.append(float_data)
             self.lfp.append([])
 
-        #print('gone', self.gone_bananas)
-        #print('bananas', banana_pos)
         # Things that can affect camera:
         # options resolution resW resH
         base = ShowBase()
@@ -112,7 +100,9 @@ class BananaWorld(DirectObject):
         # aspect ratio 1.3333
         movie_res = [800, 600]
         # set aspect ratio to original game
-        lens.setAspectRatio(1280.0 / 800.0)
+        #print resolution
+        lens.setAspectRatio(resolution[0] / resolution[1])
+        #print lens.getAspectRatio()
         #lens.setAspectRatio(800.0 / 600.0)
         base.cam.node().setLens(lens)
         print('Fov', lens.getFov())
@@ -186,27 +176,32 @@ class BananaWorld(DirectObject):
 
         #bananas = range(len(banana_h))
 
-        self.bananaModel = []
+        self.bananaModel = {}
 
-        for i, k in enumerate(self.banana_key):
-            print('i', i)
+        for k in self.fruit_pos:
+            #print('i', i)
             print('k', k)
-            self.bananaModel.append(base.loader.loadModel('../goBananas/models/bananas/banana.bam'))
-            position = banana_pos[k]['position']
-            heading = banana_pos[k]['heading']
-            self.bananaModel[i].setPos(
-                Point3(float(position[i][0]), float(position[i][1]), float(position[i][2])))
-            self.bananaModel[i].setScale(0.5)
-            self.bananaModel[i].setH(float(heading))
-            self.bananaModel[i].reparentTo(render)
+            self.bananaModel[k] = base.loader.loadModel('../goBananas/models/bananas/banana.bam')
+            position = self.fruit_pos[k]['position'][0]
+            print position
+            heading = self.fruit_pos[k]['head']
+            print heading
+            self.bananaModel[k].setPos(
+                Point3(float(position[0]), float(position[1]), float(position[2])))
+            self.bananaModel[k].setScale(0.5)
+            self.bananaModel[k].setH(float(heading))
+            # assume all bananas stashed to start
+            self.bananaModel[k].setStashed(True)
+            self.bananaModel[k].reparentTo(render)
 
         #print('start', start_time)
-        for i, j in enumerate(self.banana_ts):
-            if j < start_time:
-                print('stashed')
-                print(j)
-                self.bananaModel[self.gone_bananas.pop(i)].stash()
-                self.banana_ts.pop(i)
+        # start at trial start, so not doing this currently
+        # for i, j in enumerate(self.banana_ts):
+        #     if j < start_time:
+        #         print('stashed')
+        #         print(j)
+        #         self.bananaModel[self.gone_bananas.pop(i)].stash()
+        #         self.banana_ts.pop(i)
 
         if self.record:
             print('make movie', movie_name)
@@ -273,6 +268,8 @@ class BananaWorld(DirectObject):
             self.update_banana()
         if self.last_eye_ts:
             self.update_eye(task.time)
+        if self.trial_mark and self.trial_mark[0] < task.time:
+            self.move_bananas()
         for ind, last_lfps in enumerate(self.last_lfp):
             self.update_LFP(dt, last_lfps, self.lfp[ind], self.lfp_offset[ind], self.gen_lfp[ind])
         return task.cont
