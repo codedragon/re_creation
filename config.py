@@ -32,14 +32,16 @@ use_eye_data = False
 # data_filename = '../data_goBananas/GR_15_01_28_13_00/log.txt'
 # # for matching lfp data from Mike
 # lfp_data_file = []
+# trial_start = None
 # start_time = 1422478814411
 # time_stamp = 1422478999138
 # save_filename = '../movies/data/GR_training2'
-# # how many bananas are on the field
+# # # how many bananas are on the field
 # num_fruit = 25
+# fruit_list = ['old_bananas']
 
 # JN starting memory training, still gobananas, alpha banana
-data_filename = '../data_goBananas/JN_15_01_26_14_25/log.txt'
+data_filename = '../data_goBananas/JN_BR_15_02_02_14_38/log.txt'
 #data_filename = '../goBananas/Data/JN/JN_15_01_26_14_25/log.txt'
 lfp_data_file = []
 # if start_time and trial start are the same, can just make trial start None
@@ -47,13 +49,13 @@ lfp_data_file = []
 # need to know where the beginning of that trial is so that we get the correct
 # positions for that trial. If doing one frame, start_time and end_time will be
 # the same.
-trial_start = None
-start_time = 1422311115321
-end_time = 1422311215873
+# trial_start =
+start_time = 1422916866153
+end_time = 1422916925856
 save_filename = '../movies/data/JN_goAlpha'
 #save_filename = '../movie_data/JN_goAlpha'
 # how many bananas are on the field
-num_fruit = 4
+num_fruit = 2
 fruit_list = ['old_banana', 'banana', 'cherry']
 
 #data_filename = '../data_bananarchy/session_1191/log.txt'

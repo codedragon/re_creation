@@ -70,6 +70,7 @@ class GetData():
         # needed for internals:
         self.now_trial = []
         self.resolution = []
+        self.alpha = []  # list of any fruit that change alpha
 
         # stuff that will have to be condensed, since we don't know which trial
         # we are getting data from until the end
@@ -95,6 +96,7 @@ class GetData():
         # out from movements. Collect position, reset movements to empty list, collect movements
         # until next position, empty list, etc.
         first = True
+        print self.trial_start
         with open(self.data_filename, 'rb') as f:
             for line in f:
                 tokens = line[:-1].rstrip('\r').split('\t')
@@ -109,7 +111,7 @@ class GetData():
                     break
                 # heading for bananas only appears at beginning of file, since never changes
                 if len(tokens) > 3:
-                    if tokens[3][:-3] in self.fruit_list:
+                    if tokens[3][:-3] in self.fruit_list or tokens[3] in self.fruit_list:
                         if tokens[2] == "VROBJECT_HPR":
                             #print self.fruit_pos
                             # create dictionary for this fruit, if it doesn't exist
@@ -142,13 +144,15 @@ class GetData():
                         if tokens[2] == "Alpha":
                             # ack, need to find space separating fruit from alpha number
                             alpha = tokens[3].split(' ')
+                            if alpha[0] not in self.alpha:
+                                self.alpha.append(alpha[0])
                             #print tokens[2], alpha
                             # format is fruit, alpha, number
                             alpha.insert(1, 'alpha')
                             self.fruit_status.append(alpha)
                             self.fruit_status_stamp.append(tokens[0])
                             #print self.fruit_status
-                        if tokens[3][:-3] in self.fruit_list:
+                        if tokens[3][:-3] in self.fruit_list or tokens[3] in self.fruit_list:
                             #print('how many columns', len(tokens))
                             #print('this fruit', tokens[3][:-3], tokens[2], tokens[0])
                             if tokens[2] == 'VROBJECT_POS':
@@ -299,6 +303,8 @@ class GetData():
             # time variables
             pickle.dump(self.avatar_htime, output, -1)
             pickle.dump(self.avatar_ptime, output, -1)
+            # alpha
+            pickle.dump(self.alpha, output, -1)
             #pickle.dump(self.now_gone_ts, output, -1)
             # eye data
             pickle.dump(self.eye_data, output, -1)

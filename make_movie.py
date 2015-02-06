@@ -9,7 +9,6 @@ import random
 
 class BananaWorld(DirectObject):
     def __init__(self):
-        hack = True  # using heading to identify which banana at which position
         # set to record movie
         self.record = True
         # make sure directory exists
@@ -29,8 +28,7 @@ class BananaWorld(DirectObject):
             self.fruit_pos = pickle.load(variable)
             #print('fruit positions', fruit_pos)
             trial_mark = pickle.load(variable)
-            fruit_status = pickle.load(variable)
-            #print fruit_status
+            self.fruit_status = pickle.load(variable)
             fruit_status_ts = pickle.load(variable)
             #print(int(gone_bananas[0][-2:]))
             avatar_h = pickle.load(variable)
@@ -40,6 +38,8 @@ class BananaWorld(DirectObject):
             avatar_ht = pickle.load(variable)
             avatar_pt = pickle.load(variable)
 
+            alpha = pickle.load(variable)
+            print alpha
             eye_data = pickle.load(variable)
             eye_ts = pickle.load(variable)
             lfp_data = []
@@ -53,22 +53,41 @@ class BananaWorld(DirectObject):
             eye_data = []
             eye_ts = []
 
+        print('start time', start_time)
         # make zero the start time, change to seconds (from milliseconds)
         self.avatar_ht = [(float(i) - start_time) / 1000 for i in avatar_ht]
         self.avatar_pt = [(float(i) - start_time) / 1000 for i in avatar_pt]
         self.fruit_status_ts = [(float(i) - start_time) / 1000 for i in fruit_status_ts]
         self.eye_ts = [(float(i) - start_time) / 1000 for i in eye_ts]
         self.trial_mark = [(float(i) - start_time) / 1000 for i in trial_mark]
-        # and now make it official...
-        start_time = 0
 
-        print self.trial_mark
-        # non-time variables still need to be converted from strings
+        # change first trial mark to very beginning, so bananas appear right away
+        self.trial_mark[0] = 0
+
+        # Let's reverse these lists, since it is more efficient to pop from the end
+        self.avatar_ht.reverse()
+        self.avatar_pt.reverse()
+        self.fruit_status_ts.reverse()
+        self.eye_ts.reverse()
+        self.trial_mark.reverse()
+        #print self.trial_mark
+        #print('avatar timestamps', self.avatar_pt)
+
+        # non-time variables with numbers still need to be converted from strings
         #print(res)
         resolution = [int(i) for i in res]
         self.avatar_h = [float(i) for i in avatar_h]
         self.avatar_pos = [[float(j) for j in i] for i in avatar_pos]
 
+        # and let's reverse these too
+        self.avatar_h.reverse()
+        self.avatar_pos.reverse()
+
+        # this one will remain strings, so no conversion necessary
+        self.fruit_status.reverse()
+        #print self.fruit_status
+
+        #print('avatar position', self.avatar_pos)
         #print(gone_bananas[0])
         # bananarchy data and gobananas data slightly different here,
         # and gobananas also changed to accomodate over 99 bananas...
@@ -140,7 +159,7 @@ class BananaWorld(DirectObject):
         if use_eye_data:
             self.last_eye = self.eye_data.pop(0)
             #print(len(self.eye_data))
-            self.last_eye_ts = self.eye_ts.pop(0)
+            self.last_eye_ts = self.eye_ts.pop()
             self.gen_eye_pos = self.get_data(self.eye_data)
             self.gen_eye_ts = self.get_data(self.eye_ts)
 
@@ -161,11 +180,12 @@ class BananaWorld(DirectObject):
         # last_lfp_x determines where on the x axis we start the lfp trace
         self.start_x_trace = 50
 
-        points = self.avatar_pos.pop(0)
+        # set starting point for avatar
+        points = self.avatar_pos.pop()
         base.cam.setPos(Point3(points[0], points[1], points[2]))
-        base.cam.setH(self.avatar_h.pop(0))
-        self.avatar_ht.pop(0)
-        self.avatar_pt.pop(0)
+        base.cam.setH(self.avatar_h.pop())
+        self.avatar_ht.pop()
+        self.avatar_pt.pop()
 
         self.set_environment(environ)
 
@@ -176,23 +196,35 @@ class BananaWorld(DirectObject):
 
         #bananas = range(len(banana_h))
 
-        self.bananaModel = {}
+        self.fruitModel = {}
+        print('fruit', self.fruit_pos)
 
-        for k in self.fruit_pos:
+        for k, v in self.fruit_pos.iteritems():
             #print('i', i)
             print('k', k)
-            self.bananaModel[k] = base.loader.loadModel('../goBananas/models/bananas/banana.bam')
-            position = self.fruit_pos[k]['position'][0]
-            print position
-            heading = self.fruit_pos[k]['head']
-            print heading
-            self.bananaModel[k].setPos(
-                Point3(float(position[0]), float(position[1]), float(position[2])))
-            self.bananaModel[k].setScale(0.5)
-            self.bananaModel[k].setH(float(heading))
+            print('alpha', alpha)
+            #print('v', v)
+            if 'banana' in k:
+                self.fruitModel[k] = base.loader.loadModel('../goBananas/models/bananas/banana.bam')
+                self.fruitModel[k].setScale(0.5)
+            elif 'cherry' in k:
+                self.fruitModel[k] = base.loader.loadModel('../goBananas/models/fruit/cherries.egg')
+                self.fruitModel[k].setScale(0.08)
+            # position = self.fruit_pos[k]['position'].pop(0)
+            # print position
+            heading = v['head']
+            #print heading
+            # self.fruitModel[k].setPos(
+            #     Point3(float(position[0]), float(position[1]), float(position[2])))
+
+            self.fruitModel[k].setH(float(heading))
+            self.fruitModel[k].reparentTo(render)
             # assume all bananas stashed to start
-            self.bananaModel[k].setStashed(True)
-            self.bananaModel[k].reparentTo(render)
+            #self.fruitModel[k].stash()
+            if k in alpha:
+                print 'set alpha'
+                self.alpha_node_path = self.fruitModel[k]
+                self.alpha_node_path.setTransparency(TransparencyAttrib.MAlpha)
 
         #print('start', start_time)
         # start at trial start, so not doing this currently
@@ -200,7 +232,7 @@ class BananaWorld(DirectObject):
         #     if j < start_time:
         #         print('stashed')
         #         print(j)
-        #         self.bananaModel[self.gone_bananas.pop(i)].stash()
+        #         self.fruitModel[self.gone_bananas.pop(i)].stash()
         #         self.banana_ts.pop(i)
 
         if self.record:
@@ -213,7 +245,7 @@ class BananaWorld(DirectObject):
         self.gameTask.last = 0         # Task time of the last frame
 
         #print('start', self.gameTask.game_time)
-        #print('head start', self.avatar_ht[0])
+        #print('head start', self.avatar_ht[-1])
         #print('increment', (1 / 60) * 1000000)
 
     def set_environment(self, environ):
@@ -258,18 +290,25 @@ class BananaWorld(DirectObject):
         dt = task.time - task.last
         task.last = task.time
         #print('time', task.time)
+        #print('trial marker', self.trial_mark[-1])
         # check to see if anything has happened.
         # there is a position and heading for every time stamp for the avatar.
-        if len(self.avatar_pt) > 0:
+        if self.avatar_pt:
             self.update_avt_p(task.time)
-        if len(self.avatar_ht) > 0:
+        else:
+            # if we aren't moving the avatar anymore, assume done
+            print 'done'
+            return task.done
+        if self.avatar_ht:
             self.update_avt_h(task.time)
-        if len(self.banana_ts) > 0 and self.banana_ts[0] < task.time - 0.5:
-            self.update_banana()
+        if self.fruit_status_ts:
+            self.update_fruit(task.time)
+        # if len(self.banana_ts) > 0 and self.banana_ts[0] < task.time - 0.5:
+        #    self.update_banana()
         if self.last_eye_ts:
             self.update_eye(task.time)
-        if self.trial_mark and self.trial_mark[0] < task.time:
-            self.move_bananas()
+        if self.trial_mark and self.trial_mark[-1] < task.time:
+            self.move_fruit()
         for ind, last_lfps in enumerate(self.last_lfp):
             self.update_LFP(dt, last_lfps, self.lfp[ind], self.lfp_offset[ind], self.gen_lfp[ind])
         return task.cont
@@ -279,40 +318,74 @@ class BananaWorld(DirectObject):
             yield item
 
     def update_avt_h(self, t_time):
-        while self.avatar_ht[0] < t_time:
-            if len(self.avatar_ht) == 1:
-                #print('avatar h done')
-                break
-            #print(self.avatar_ht[i])
+        while self.avatar_ht[-1] < t_time:
+            # if len(self.avatar_ht) == 1:
+            #     #print('avatar h done')
+            #     break
+            #print(self.avatar_ht[-1])
             #print(task.game_time)
             #print('change direction')
-            base.cam.setH(self.avatar_h.pop(0))
-            self.avatar_ht.pop(0)
+            base.cam.setH(self.avatar_h.pop())
+            self.avatar_ht.pop()
+            if not self.avatar_ht:
+                break
 
     def update_avt_p(self, t_time):
-        while self.avatar_pt[0] < t_time:
-            if len(self.avatar_pt) == 1:
-                #print('avatar pos done')
-                break
+        # print('avatar', self.avatar_pt[-1], 'time', t_time)
+        while self.avatar_pt[-1] < t_time:
+            # if len(self.avatar_pt) == 1:
+            #     # print('avatar pos done')
+            #     break
             #print('move')
-            #print(self.avatar_pt[i])
-            points = self.avatar_pos.pop(0)
+            #print(self.avatar_pt[-1])
+            points = self.avatar_pos.pop()
             #print points
             base.cam.setPos(Point3(points[0], points[1], points[2]))
-            self.avatar_pt.pop(0)
+            self.avatar_pt.pop()
+            if not self.avatar_pt:
+                break
 
-    def update_banana(self):
-        #print(self.banana_ts[0])
-        print('gone', self.gone_bananas[0])
-        print self.avatar_pos[0]
-        print('key', self.banana_key.index(self.gone_bananas[0]))
-        print('gone_bananas', self.gone_bananas)
-        now_banana = self.banana_key.index(self.gone_bananas[0])
-        print('now banana', now_banana)
-        self.gone_bananas.pop(0)
-        print self.bananaModel[now_banana].getPos()
-        self.bananaModel[now_banana].stash()
-        self.banana_ts.pop(0)
+    def update_fruit(self, t_time):
+        # print self.avatar_pos[-1]
+        while self.fruit_status_ts[-1] < t_time:
+            current_list = self.fruit_status.pop()
+            print current_list
+            # list goes: fruit name, what happens, how much
+            if current_list[1] == 'alpha':
+                self.alpha_node_path.setAlphaScale(float(current_list[2]))
+            if current_list[1] == 'stash':
+                if current_list[2] == 'True':
+                    self.fruitModel[current_list[0]].stash()
+                else:
+                    print 'unstash'
+                    self.fruitModel[current_list[0]].unstash()
+            #         print self.fruitModel[current_list[0]].isStashed()
+            self.fruit_status_ts.pop()
+            if not self.fruit_status_ts:
+                break
+        #for k, v in self.fruitModel.iteritems():
+        #    print v.getPos()
+        #    print v.ls()
+        # fruit status is
+        # now_banana = self.banana_key.index(self.gone_bananas[0])
+        # print('now banana', now_banana)
+        # self.gone_bananas.pop(0)
+        # print self.fruitModel[now_banana].getPos()
+        # self.fruitModel[now_banana].stash()
+        # self.banana_ts.pop(0)
+
+    def move_fruit(self):
+        print 'move fruit'
+        for k, v in self.fruit_pos.iteritems():
+            print('k', k)
+            print ('position', v['position'][0])
+            position = v['position'].pop(0)
+            #print('popped this position', position)
+            self.fruitModel[k].setPos(
+                Point3(float(position[0]), float(position[1]), float(position[2])))
+            #print('after pop', self.fruit_pos)
+
+        self.trial_mark.pop()
 
     def update_LFP(self, dt, last_lfp, lfp_trace, offset, gen_lfp):
         # lfp data is taken at 1000Hz, and dt is the number of seconds since
