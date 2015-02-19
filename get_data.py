@@ -48,6 +48,8 @@ class GetData():
             self.start_time = config['start_time']
             # if no trial_start given, assume same as start time
             self.trial_start = config.get('trial_start', self.start_time)
+            print('actual start', self.start_time)
+            print ('trial start', self.trial_start)
             self.end_time = config['end_time']
             self.save_filename = config['save_filename']
             self.get_eye_data = config['use_eye_data']
