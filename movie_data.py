@@ -2,9 +2,9 @@ import pickle
 
 
 class MovieData(object):
-    def __init__(self, use_eye_data=None):
+    def __init__(self, movie_data_file, use_eye_data=None):
 
-        with open('../movies/data/JN_goAlpha') as variable:
+        with open(movie_data_file) as variable:
             res = pickle.load(variable)
             start_time = int(pickle.load(variable))
             self.fruit_pos = pickle.load(variable)
@@ -41,9 +41,9 @@ class MovieData(object):
         self.trial_mark = [(float(i) - start_time) / 1000 for i in trial_mark]
 
         print('start', start_time)
-        print self.avatar_ht[:5]
-        print self.avatar_pt[:5]
-        print self.trial_mark
+        # print self.avatar_ht[:5]
+        # print self.avatar_pt[:5]
+        # print self.trial_mark
         # non-time variables still need to be converted from strings
         #print(res)
         self.resolution = [int(i) for i in res]

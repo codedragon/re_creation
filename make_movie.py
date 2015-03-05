@@ -3,24 +3,19 @@ from direct.showbase.ShowBase import ShowBase
 from direct.showbase.DirectObject import DirectObject
 from panda3d.core import PerspectiveLens, Point3, LineSegs, TransparencyAttrib
 from movie_data import MovieData
-
-
-def get_data(data):
-        for item in data:
-            yield item
+from collections import deque
 
 
 class BananaWorld(DirectObject):
-    def __init__(self, record, movie_name=None, use_eye_data=False, use_lfp_data=False):
+    def __init__(self, movie_data_file, record, use_eye_data=False, use_lfp_data=False):
         DirectObject.__init__(self)
         self.record = record
         # make sure directory exists
-        if not movie_name:
-            movie_name = '../movies/frames/JN_goAlpha/JN_goAlpha'
+        movie_name = '../movies/frames/game/game'
         environ = 'original'
         #environ = 'circle'
 
-        data = MovieData(use_eye_data)
+        data = MovieData(movie_data_file, use_eye_data)
 
         # Things that can affect camera:
         # options resolution resW resH
@@ -52,17 +47,22 @@ class BananaWorld(DirectObject):
         # so the origin was in the center, but when using pixel2d the origin is in the top
         # left corner, so we must move the coordinate system to the right and down by half
         # the screen
-        #
+        # covert resolution
         eye_factor = [movie_res[0]/data.resolution[0], movie_res[1]/data.resolution[1]]
-        #print('eye factor', eye_factor)
+        print('move_res', movie_res)
+        print('actual movie res', self.base.win.getXSize(), self.base.win.getYSize())
+        print('data_res', data.resolution)
+        print('eye factor', eye_factor)
         # calibration not very good...
         #fudge_factor_x = 50
         #fudge_factor_y = 80
         fudge_factor_x = 0
-        fudge_factor_y = 0
-        self.eye_data = []
+        fudge_factor_y = 60
+        self.eye_data = deque()
         self.last_eye_ts = None
-
+        # since for eye_data we are looping and adding to the end of the list,
+        # but then we will be pulling from the front of the list, we have a queue,
+        # so let's use deque. (Other data was reversed in movie_data).
         if use_eye_data:
             for i in data.raw_eye_data:
                 x = (float(i[0]) * eye_factor[0]) + (self.base.win.getXSize() / 2) + fudge_factor_x
@@ -73,11 +73,12 @@ class BananaWorld(DirectObject):
             self.eyes = []
             #print(len(self.eye_data))
             # make generators for eye data
-            self.last_eye = self.eye_data.pop(0)
+            self.last_eye = self.eye_data.popleft()
             #print(len(self.eye_data))
+            # time stamps are all reversed, so can use normal pop and then assign directly,
+            # like other time variables
             self.last_eye_ts = data.eye_ts.pop()
-            self.gen_eye_pos = get_data(self.eye_data)
-            self.gen_eye_ts = get_data(data.eye_ts)
+            self.eye_ts = data.eye_ts
 
         # need to adjust y position for lfp
         self.lfp_gain = 0.05
@@ -88,12 +89,14 @@ class BananaWorld(DirectObject):
         self.last_lfp = []
         self.gen_lfp = []
         # make a generator for lfp data
+        # this code is a little silliness, and I'm popping a giant list from the wrong end
+        # when I start plotting lfp again, fix this!
         if use_lfp_data:
             for data in data.lfp_data:
                 self.lfp_offset.append(lfp_offset)
                 self.last_lfp.append([(data.pop(0) * self.lfp_gain) + lfp_offset])
                 lfp_offset += 100
-                self.gen_lfp.append(get_data(data))
+                # self.gen_lfp.append(get_data(data))
 
         # last_lfp_x determines where on the x axis we start the lfp trace
         self.start_x_trace = 50
@@ -118,6 +121,10 @@ class BananaWorld(DirectObject):
         self.avatar_ht.pop()
         self.avatar_pt.pop()
 
+        # get last time stamp (first of list) for avatar to calculate length of movie
+        # add half a second buffer.
+        movie_length = self.avatar_ht[0] + 0.5
+        print('movie length', movie_length)
         self.set_environment(environ)
 
         #load bananas
@@ -156,7 +163,7 @@ class BananaWorld(DirectObject):
 
         if self.record:
             print('make movie', movie_name)
-            self.movie_task = self.base.movie(movie_name, 150, 30, 'png', 4)
+            self.movie_task = self.base.movie(movie_name, movie_length, 30, 'png', 4)
 
         self.gameTask = taskMgr.add(self.frame_loop, "frame_loop")
 
@@ -198,7 +205,7 @@ class BananaWorld(DirectObject):
         skyModel.reparentTo(self.base.render)
         #print 'sky', skyModel.getPos()
 
-        self.eye_spot = base.loader.loadModel("models/ball")
+        self.eye_spot = self.base.loader.loadModel("models/ball")
         #eye_texture = base.loader.loadTexture('textures/spotlight.png')
         #self.eye_spot.setTexture(eye_texture, 1)
         self.eye_spot.setScale(50)
@@ -335,10 +342,11 @@ class BananaWorld(DirectObject):
         #print('last_eye', self.last_eye)
 
         group_eye = []
+        # get eye movements since the last frame
         while self.last_eye_ts < t_time:
             try:
-                group_eye.append(next(self.gen_eye_pos))
-                self.last_eye_ts = next(self.gen_eye_ts)
+                group_eye.append(self.eye_data.popleft())
+                self.last_eye_ts = self.eye_ts.pop()
             except StopIteration:
                 #make the next eye movement something crazy in the future
                 self.last_eye_ts = t_time + 10000
@@ -347,6 +355,8 @@ class BananaWorld(DirectObject):
                 break
 
         if group_eye:
+            # plotting the average
+            # have to sum in a loop, because tuples in a list
             #eye.moveTo(self.last_eye[0], 55, self.last_eye[1])
             sum_x = 0
             sum_y = 0
@@ -354,22 +364,8 @@ class BananaWorld(DirectObject):
                 sum_x += i[0]
                 sum_y += i[1]
             self.last_eye = [sum_x / len(group_eye), sum_y / len(group_eye)]
-
             self.eye_spot.setPos(self.last_eye[0], 55, self.last_eye[1])
             self.eye_spot.reparentTo(self.base.pixel2d)
-            #if self.eyes:
-            #    self.eyes[0].removeNode()
-            #    self.eyes.pop(0)
-            #eye.drawTo(self.last_eye[0], 55, self.last_eye[1])
-            #node = pixel2d.attachNewNode(eye.create())
-            #self.eyes.append(node)
-        #print(self.eye_data[i][0])
-        #print(self.eye_data.pop(i))
-
-        # get rid of eye position from a while ago..
-        #while len(self.eyes) > 1:
-        #    self.eyes[0].removeNode()
-        #    self.eyes.pop(0)
 
 
 class StartError(Exception):
