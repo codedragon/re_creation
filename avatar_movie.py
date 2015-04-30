@@ -24,8 +24,8 @@ class AvatarWorld(DirectObject):
         self.fruit_pos_ts = data.fruit_pos_ts
         self.trial_mark = data.trial_mark
         self.alpha = data.alpha
-        # toggle to erase avatar
-        self.erase_avatar = False
+        # toggle to detect when a block of trials is finished
+        self.block_done = False
         # print self.fruit_status
         # really should pull this from the config file (distance_goal)
         # everything is at 1/2 size
@@ -167,16 +167,6 @@ class AvatarWorld(DirectObject):
                 # print(i[0], i[1], i[2])
                 avt.drawTo(i[0], self.drawing_layer, i[1])
             self.avatar_node.append(self.base.render.attachNewNode(avt.create()))
-        # use this if you want to erase the trace after a trial.
-        #if self.trial_mark[-1] < t_time:
-        if self.erase_avatar:
-            # print 'remove node'
-            for i in self.avatar_node:
-                i.detachNode()
-            #old_color = avt.getVertexColor(-1)
-            #print old_color
-            #old_color[0] += 0.2
-            #avt.setColor(old_color)
 
     def update_fruit(self, t_time):
         # print self.avatar_pos[-1]
@@ -190,6 +180,7 @@ class AvatarWorld(DirectObject):
                 # if we are changing banana alpha to something less than 1, turn on circle
                 if float(current_list[2]) == 0:
                     print 'make circle for invisible'
+                    self.block_done = True
                     self.make_circle()
                     self.avatar_color = [0, 1, 1]
                 elif float(current_list[2]) < 1:
@@ -210,9 +201,10 @@ class AvatarWorld(DirectObject):
                     # if stashing the recall fruit, erase the circle,
                     # return avatar line color to normal
                     if current_list[0] in self.alpha:
-                        print 'erase circle'
+                        # print 'erase circle'
                         self.erase_circle()
                         self.avatar_color = [1, 1, 1]
+                    # this is not true for newer data, but leaving it here for old data:
                     # no good way to tell the difference between an invisible recall fruit
                     # and a solid recall fruit, other than looking at timing. ugh. Brute force.
                     # can't use timing, self.fruit_status_ts[-1]
@@ -223,7 +215,7 @@ class AvatarWorld(DirectObject):
                             # print 'next alpha?'
                             # print self.fruit_status_ts[-2] - self.fruit_status_ts[-1]
                             if self.fruit_status_ts[-2] - self.fruit_status_ts[-1] > 0.2:
-                                print 'make circle for invisible'
+                                print 'should only reach here with old data'
                                 self.make_circle()
                                 self.avatar_color = [0, 1, 1]
                 else:
@@ -247,16 +239,8 @@ class AvatarWorld(DirectObject):
             # print('move fruit', fruit, position)
             self.fruitModel[fruit].setPos(
                 Point3(float(position[0])/2, 25, float(position[1])/2))
-            # print('next timestamp', self.fruit_pos_ts[0])
-            # print('popped this position', position)
-            # position = [float(x)/2 for x in position]
-            # print position
-            # self.fruitModel[k].setPos(
-            #    Point3(float(position[0]), 25, float(position[1])))
-            # print('after pop', self.fruit_pos)
 
     def make_circle(self):
-        print 'in circle'
         alpha_circle = LineSegs()
         alpha_circle.setThickness(2.0)
         alpha_circle.setColor(1, 1, 0, 1)
@@ -273,6 +257,10 @@ class AvatarWorld(DirectObject):
     def erase_circle(self):
         for i in self.alpha_circle_node:
             i.detachNode()
+        if self.block_done:
+            for i in self.avatar_node:
+                i.detachNode()
+            self.block_done = False
 
 if __name__ == "__main__":
     AW = AvatarWorld()
