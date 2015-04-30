@@ -30,7 +30,7 @@ class GetData():
         # and end, otherwise, will only get avatar data for end_time.
 
         if config is None:
-            print('default data')
+            print('caution: using default data')
             self.data_filename = '../play_data/giz_short.txt'
             # self.start_time = 0
             self.start_time = 1389990322200
@@ -159,10 +159,12 @@ class GetData():
                                 position = tokens[4][tokens[4].find('(') + 1:tokens[4].find(')')].split(',')
                                 # print('fruit', tokens[3], position)
                                 if position != ['0', ' 0', ' 1']:
+                                    # print tokens[3]
                                     # create dictionary for this fruit, if doesn't exist
                                     self.fruit_pos.setdefault(tokens[3], {})
                                     # add the position to the list of positions for that fruit, or start the list
                                     self.fruit_pos[tokens[3]].setdefault('position', []).append(position)
+                                    self.fruit_pos[tokens[3]].setdefault('timestamp', []).append(tokens[0])
                                     # self.fruit_pos.append(position)
                                     # print('new position', self.fruit_pos)
                             elif tokens[2] == "VROBJECT_STASHED":
@@ -251,7 +253,8 @@ class GetData():
         # print('now gone', self.now_fruit_status)
         # print('now gone ts', self.now_gone_ts)
         # now put the data in a file
-        self.pickle_info()
+        # now calling this from script
+        # self.pickle_info()
 
     def bisect_data(self, full_data, time_data, end_time):
         # given a big block of data, slice it so we are getting just the data from the beginning
@@ -289,6 +292,9 @@ class GetData():
         return lfp_data[0]
 
     def pickle_info(self):
+        print 'pickle'
+        for k, v in self.fruit_pos.iteritems():
+            print k, v
         with open(self.save_filename, 'wb') as output:
             pickle.dump(self.resolution, output, -1)
             pickle.dump(self.start_time, output, -1)

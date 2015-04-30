@@ -34,8 +34,8 @@ class BananaWorld(DirectObject):
         #print lens.getAspectRatio()
         #lens.setAspectRatio(800.0 / 600.0)
         self.base.cam.node().setLens(lens)
-        print('Fov', lens.getFov())
-        print('Aspect Ratio', lens.getAspectRatio())
+        # print('Fov', lens.getFov())
+        # print('Aspect Ratio', lens.getAspectRatio())
         # set near to be same as avatar's radius
         # affects how close you get to the bananas
         lens.setNear(0.1)
@@ -49,10 +49,10 @@ class BananaWorld(DirectObject):
         # the screen
         # covert resolution
         eye_factor = [movie_res[0]/data.resolution[0], movie_res[1]/data.resolution[1]]
-        print('move_res', movie_res)
-        print('actual movie res', self.base.win.getXSize(), self.base.win.getYSize())
-        print('data_res', data.resolution)
-        print('eye factor', eye_factor)
+        # print('move_res', movie_res)
+        # print('actual movie res', self.base.win.getXSize(), self.base.win.getYSize())
+        # print('data_res', data.resolution)
+        # print('eye factor', eye_factor)
         # calibration not very good...
         #fudge_factor_x = 50
         #fudge_factor_y = 80
@@ -109,6 +109,7 @@ class BananaWorld(DirectObject):
         self.fruit_status = data.fruit_status
         self.fruit_status_ts = data.fruit_status_ts
         self.fruit_pos = data.fruit_pos
+        self.fruit_pos_ts = data.fruit_pos_ts
         self.trial_mark = data.trial_mark
 
         # initialize other variables
@@ -154,8 +155,8 @@ class BananaWorld(DirectObject):
 
             self.fruitModel[k].setH(float(heading))
             self.fruitModel[k].reparentTo(self.base.render)
-            # assume all bananas stashed to start
-            #self.fruitModel[k].stash()
+            # assume all fruit stashed to start
+            self.fruitModel[k].stash()
             if k in data.alpha:
                 print 'set alpha'
                 self.alpha_node_path = self.fruitModel[k]
@@ -169,7 +170,7 @@ class BananaWorld(DirectObject):
 
         self.gameTask.last = 0         # Task time of the last frame
 
-        print('trialmarks', self.trial_mark)
+        #print('trialmarks', self.trial_mark)
         #print('start', self.gameTask.game_time)
         #print('head start', self.avatar_ht[-1])
         #print('increment', (1 / 60) * 1000000)
@@ -233,8 +234,10 @@ class BananaWorld(DirectObject):
         #    self.update_banana()
         if self.last_eye_ts:
             self.update_eye(task.time)
-        if self.trial_mark and self.trial_mark[-1] < task.time:
-            self.move_fruit()
+        if self.fruit_pos_ts:
+            self.move_fruit(task.time)
+        #if self.trial_mark and self.trial_mark[-1] < task.time:
+        #    self.move_fruit()
         for ind, last_lfps in enumerate(self.last_lfp):
             self.update_LFP(dt, last_lfps, self.lfp[ind], self.lfp_offset[ind], self.gen_lfp[ind])
         return task.cont
@@ -260,7 +263,7 @@ class BananaWorld(DirectObject):
         # print self.avatar_pos[-1]
         while self.fruit_status_ts[-1] < t_time:
             current_list = self.fruit_status.pop()
-            print current_list
+            # print current_list
             # list goes: fruit name, what happens, how much
             if current_list[1] == 'alpha':
                 self.alpha_node_path.setAlphaScale(float(current_list[2]))
@@ -268,37 +271,24 @@ class BananaWorld(DirectObject):
                 if current_list[2] == 'True':
                     self.fruitModel[current_list[0]].stash()
                 else:
-                    print 'unstash'
+                    # print 'unstash'
                     self.fruitModel[current_list[0]].unstash()
             #         print self.fruitModel[current_list[0]].isStashed()
             self.fruit_status_ts.pop()
             if not self.fruit_status_ts:
                 break
-        #for k, v in self.fruitModel.iteritems():
-        #    print v.getPos()
-        #    print v.ls()
-        # fruit status is
-        # now_banana = self.banana_key.index(self.gone_bananas[0])
-        # print('now banana', now_banana)
-        # self.gone_bananas.pop(0)
-        # print self.fruitModel[now_banana].getPos()
-        # self.fruitModel[now_banana].stash()
-        # self.banana_ts.pop(0)
 
-    def move_fruit(self):
-        print 'move fruit'
-        for k, v in self.fruit_pos.iteritems():
-            print('k', k)
-            print ('position', v['position'][0])
-            # we did not reverse the lists in the dictionary, since pain in the ass, and
-            # they are likely to be short. so taking from the front
-            position = v['position'].pop(0)
-            #print('popped this position', position)
-            self.fruitModel[k].setPos(
+    def move_fruit(self, t_time):
+        # did not reverse, since pain in the ass, and likely not many
+        while self.fruit_pos_ts[0][0] < t_time:
+            ts, fruit = self.fruit_pos_ts.pop(0)
+            # print('current time stamp', ts)
+            position = self.fruit_pos[fruit]['position'].pop(0)
+            # print('move fruit', fruit, position)
+            self.fruitModel[fruit].setPos(
                 Point3(float(position[0]), float(position[1]), float(position[2])))
-            #print('after pop', self.fruit_pos)
+            # print('next timestamp', self.fruit_pos_ts[0])
 
-        self.trial_mark.pop()
 
     def update_LFP(self, dt, last_lfp, lfp_trace, offset, gen_lfp):
         # lfp data is taken at 1000Hz, and dt is the number of seconds since

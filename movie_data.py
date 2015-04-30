@@ -39,7 +39,17 @@ class MovieData(object):
         self.fruit_status_ts = [(float(i) - start_time) / 1000 for i in fruit_status_ts]
         self.eye_ts = [(float(i) - start_time) / 1000 for i in eye_ts]
         self.trial_mark = [(float(i) - start_time) / 1000 for i in trial_mark]
-
+        self.fruit_pos_ts = []
+        fruit_ts = []
+        # get the timestamps for the fruit positions, put them in a list of of ascending
+        # order, since that is how the positions themselves are
+        for i in self.fruit_pos:
+            ts_list = self.fruit_pos[i]['timestamp']
+            for j in ts_list:
+                # add as tuple, so can be sorted together
+                fruit_ts.append((((float(j) - start_time) / 1000), i))
+        self.fruit_pos_ts = sorted(fruit_ts)
+        print 'new time stamps', self.fruit_pos_ts
         print('start', start_time)
         # print self.avatar_ht[:5]
         # print self.avatar_pt[:5]

@@ -3,6 +3,7 @@ from make_movie import BananaWorld
 from avatar_movie import AvatarWorld
 import os.path
 
+
 save_data = True  # normally saves if there is no data file yet, but this ensures writing over any existing data file.
 config = {}
 execfile('config.py', config)
@@ -13,8 +14,9 @@ if save_data:
     newData = GetData(config)
     newData.get_data_from_file()
     newData.get_data_for_end_time(newData.end_time)
-    for i, filename in enumerate(newData.lfp_data_file):
-        newData.lfp_data.append(newData.get_lfp_data(filename))
+    if config['lfp_data_file']:
+        for i, filename in enumerate(newData.lfp_data_file):
+            newData.lfp_data.append(newData.get_lfp_data(filename))
     newData.pickle_info()
 
 # data_file_name, record, use_eye_data=False, use_lfp_data=False):
