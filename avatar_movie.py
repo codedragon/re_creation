@@ -21,9 +21,11 @@ class AvatarWorld(DirectObject):
         self.fruit_status = data.fruit_status
         self.fruit_status_ts = data.fruit_status_ts
         self.fruit_pos = data.fruit_pos
+        self.fruit_pos_ts = data.fruit_pos_ts
         self.trial_mark = data.trial_mark
         self.alpha = data.alpha
-
+        # toggle to erase avatar
+        self.erase_avatar = False
         # print self.fruit_status
         # really should pull this from the config file (distance_goal)
         # everything is at 1/2 size
@@ -61,15 +63,15 @@ class AvatarWorld(DirectObject):
         border.drawTo(corner, 25, corner)
         self.base.render.attachNewNode(border.create(True))
 
-        imageObject = OnscreenImage(image='textures/lightpost.png',
-                                    pos=(-0.9, 25, 0.9), scale=(0.06, 1, 0.08), color=(0.9, 0.9, 0.9, 0.8))
-        imageObject.setTransparency(TransparencyAttrib.MAlpha)
-        imageObject1 = OnscreenImage(image='textures/palm_tree.png',
-                                    pos=(0.85, 25, 0.9), scale=0.09, color=(0.9, 0.9, 0.9, 0.8))
-        imageObject1.setTransparency(TransparencyAttrib.MAlpha)
-        imageObject2 = OnscreenImage(image='textures/transamerica_thumb.png',
-                                    pos=(-0.9, 25, -0.9), scale=0.2, color=(0.9, 0.9, 0.9, 0.8))
-        imageObject2.setTransparency(TransparencyAttrib.MAlpha)
+        # imageObject = OnscreenImage(image='textures/lightpost.png',
+        #                             pos=(-0.9, 25, 0.9), scale=(0.06, 1, 0.08), color=(0.9, 0.9, 0.9, 0.8))
+        # imageObject.setTransparency(TransparencyAttrib.MAlpha)
+        # imageObject1 = OnscreenImage(image='textures/palm_tree.png',
+        #                             pos=(0.85, 25, 0.9), scale=0.09, color=(0.9, 0.9, 0.9, 0.8))
+        # imageObject1.setTransparency(TransparencyAttrib.MAlpha)
+        # imageObject2 = OnscreenImage(image='textures/transamerica_thumb.png',
+        #                             pos=(-0.9, 25, -0.9), scale=0.2, color=(0.9, 0.9, 0.9, 0.8))
+        # imageObject2.setTransparency(TransparencyAttrib.MAlpha)
         # background color doesn't show up anyway
         #base.setBackgroundColor(115 / 255, 115 / 255, 115 / 255)
 
@@ -111,8 +113,8 @@ class AvatarWorld(DirectObject):
 
             self.fruitModel[k].setH(float(heading))
             self.fruitModel[k].reparentTo(self.base.render)
-            # assume all bananas stashed to start
-            #self.fruitModel[k].stash()
+            # assume all fruit stashed to start
+            self.fruitModel[k].stash()
             if k in data.alpha:
                 # print 'set alpha'
                 self.alpha_node_path = self.fruitModel[k]
@@ -138,10 +140,12 @@ class AvatarWorld(DirectObject):
             # if we aren't moving the avatar anymore, assume done
             print 'done'
             return task.done
+        if self.fruit_pos_ts:
+            self.move_fruit(task.time)
         if self.fruit_status_ts:
             self.update_fruit(task.time)
-        if self.trial_mark and self.trial_mark[-1] <= task.time:
-            self.move_fruit()
+        #if self.trial_mark and self.trial_mark[-1] <= task.time:
+        #    self.move_fruit()
         return task.cont
 
     def update_avt_p(self, t_time):
@@ -164,11 +168,11 @@ class AvatarWorld(DirectObject):
                 avt.drawTo(i[0], self.drawing_layer, i[1])
             self.avatar_node.append(self.base.render.attachNewNode(avt.create()))
         # use this if you want to erase the trace after a trial.
-        if self.trial_mark[-1] < t_time:
-            pass
+        #if self.trial_mark[-1] < t_time:
+        if self.erase_avatar:
             # print 'remove node'
-            #for i in self.avatar_node:
-            #    i.detachNode()
+            for i in self.avatar_node:
+                i.detachNode()
             #old_color = avt.getVertexColor(-1)
             #print old_color
             #old_color[0] += 0.2
@@ -178,13 +182,17 @@ class AvatarWorld(DirectObject):
         # print self.avatar_pos[-1]
         while self.fruit_status_ts[-1] < t_time:
             current_list = self.fruit_status.pop()
-            print current_list
-            print 'alpha', self.alpha
+            # print current_list
+            # print 'alpha', self.alpha
             # list goes: fruit name, what happens, how much
             if current_list[1] == 'alpha':
                 self.alpha_node_path.setAlphaScale(float(current_list[2]))
                 # if we are changing banana alpha to something less than 1, turn on circle
-                if float(current_list[2]) < 1:
+                if float(current_list[2]) == 0:
+                    print 'make circle for invisible'
+                    self.make_circle()
+                    self.avatar_color = [0, 1, 1]
+                elif float(current_list[2]) < 1:
                     print 'make circle for alpha'
                     self.make_circle()
             if current_list[1] == 'stash':
@@ -212,8 +220,8 @@ class AvatarWorld(DirectObject):
                     # the next time stamp is not immediately, than must be invisible.
                     if current_list[0] not in self.alpha:
                         if self.fruit_status[-1][2] == '1':
-                            print 'next alpha?'
-                            print self.fruit_status_ts[-2] - self.fruit_status_ts[-1]
+                            # print 'next alpha?'
+                            # print self.fruit_status_ts[-2] - self.fruit_status_ts[-1]
                             if self.fruit_status_ts[-2] - self.fruit_status_ts[-1] > 0.2:
                                 print 'make circle for invisible'
                                 self.make_circle()
@@ -226,28 +234,29 @@ class AvatarWorld(DirectObject):
             if not self.fruit_status_ts:
                 break
 
-    def move_fruit(self):
-        print 'move fruit'
-        # whenever we draw fruit, make the drawing layer closer to the camera,
-        # since otherwise which lines are on top is a bit random
-        self.drawing_layer -= 0.01
-        print 'layer', self.drawing_layer
-        for k, v in self.fruit_pos.iteritems():
-            print('k', k)
-            # print ('position', v['position'][0])
-            # we did not reverse the lists in the dictionary, since pain in the ass, and
-            # they are likely to be short. so taking from the front
-            position = v['position'].pop(0)
+    def move_fruit(self, t_time):
+        # did not reverse, since pain in the ass, and likely not many
+        while self.fruit_pos_ts[0][0] < t_time:
+            # whenever we draw fruit, make the drawing layer closer to the camera,
+            # since otherwise which lines are on top is a bit random
+            self.drawing_layer -= 0.01
+            #print 'layer', self.drawing_layer
+            ts, fruit = self.fruit_pos_ts.pop(0)
+            # print('current time stamp', ts)
+            position = self.fruit_pos[fruit]['position'].pop(0)
+            # print('move fruit', fruit, position)
+            self.fruitModel[fruit].setPos(
+                Point3(float(position[0])/2, 25, float(position[1])/2))
+            # print('next timestamp', self.fruit_pos_ts[0])
             # print('popped this position', position)
-            position = [float(x)/2 for x in position]
+            # position = [float(x)/2 for x in position]
             # print position
-            self.fruitModel[k].setPos(
-                Point3(float(position[0]), 25, float(position[1])))
+            # self.fruitModel[k].setPos(
+            #    Point3(float(position[0]), 25, float(position[1])))
             # print('after pop', self.fruit_pos)
 
-        self.trial_mark.pop()
-
     def make_circle(self):
+        print 'in circle'
         alpha_circle = LineSegs()
         alpha_circle.setThickness(2.0)
         alpha_circle.setColor(1, 1, 0, 1)

@@ -1,9 +1,9 @@
 use_eye_data = True
 # watch movie must be on to save movie data
-save_movie = True
-watch_movie = True
+save_movie = False
+watch_movie = False
 save_avatar_movie = False
-watch_avatar_movie = False
+watch_avatar_movie = True
 # GR starting memory training, getting pretty good
 # two bright bananas, followed by one invisible banana, one cherry
 data_filename = '../data_goBananas/GR_BR_15_04_29_11_25/log.txt'

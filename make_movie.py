@@ -228,14 +228,14 @@ class BananaWorld(DirectObject):
             return task.done
         if self.avatar_ht:
             self.update_avt_h(task.time)
+        if self.fruit_pos_ts:
+            self.move_fruit(task.time)
         if self.fruit_status_ts:
             self.update_fruit(task.time)
         # if len(self.banana_ts) > 0 and self.banana_ts[0] < task.time - 0.5:
         #    self.update_banana()
         if self.last_eye_ts:
             self.update_eye(task.time)
-        if self.fruit_pos_ts:
-            self.move_fruit(task.time)
         #if self.trial_mark and self.trial_mark[-1] < task.time:
         #    self.move_fruit()
         for ind, last_lfps in enumerate(self.last_lfp):
@@ -288,7 +288,6 @@ class BananaWorld(DirectObject):
             self.fruitModel[fruit].setPos(
                 Point3(float(position[0]), float(position[1]), float(position[2])))
             # print('next timestamp', self.fruit_pos_ts[0])
-
 
     def update_LFP(self, dt, last_lfp, lfp_trace, offset, gen_lfp):
         # lfp data is taken at 1000Hz, and dt is the number of seconds since

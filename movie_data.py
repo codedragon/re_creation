@@ -3,10 +3,11 @@ import pickle
 
 class MovieData(object):
     def __init__(self, movie_data_file, use_eye_data=None):
-
-        with open(movie_data_file) as variable:
+        with open(movie_data_file, 'rb') as variable:
             res = pickle.load(variable)
+            print res
             start_time = int(pickle.load(variable))
+            print start_time
             self.fruit_pos = pickle.load(variable)
             #print('fruit positions', fruit_pos)
             trial_mark = pickle.load(variable)
