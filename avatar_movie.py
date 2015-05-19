@@ -9,7 +9,7 @@ from math import radians, cos, sin
 
 
 class AvatarWorld(DirectObject):
-    def __init__(self, datafile, record=True):
+    def __init__(self, datafile, record=True, distance_goal=None):
         DirectObject.__init__(self)
 
         movie_name = '../movies/frames/avatar/avatar'
@@ -29,7 +29,11 @@ class AvatarWorld(DirectObject):
         # print self.fruit_status
         # really should pull this from the config file (distance_goal)
         # everything is at 1/2 size
-        self.goal_radius = 3/2
+        if distance_goal:
+            self.goal_radius = [i/2 for i in distance_goal]
+        else:
+            # total arbitrary guess
+            self.goal_radius = [3/2, 3/2]
         # Things that can affect camera:
         # options resolution resW resH
         self.base = ShowBase()
@@ -63,15 +67,15 @@ class AvatarWorld(DirectObject):
         border.drawTo(corner, 25, corner)
         self.base.render.attachNewNode(border.create(True))
 
-        # imageObject = OnscreenImage(image='textures/lightpost.png',
-        #                             pos=(-0.9, 25, 0.9), scale=(0.06, 1, 0.08), color=(0.9, 0.9, 0.9, 0.8))
-        # imageObject.setTransparency(TransparencyAttrib.MAlpha)
-        # imageObject1 = OnscreenImage(image='textures/palm_tree.png',
-        #                             pos=(0.85, 25, 0.9), scale=0.09, color=(0.9, 0.9, 0.9, 0.8))
-        # imageObject1.setTransparency(TransparencyAttrib.MAlpha)
-        # imageObject2 = OnscreenImage(image='textures/transamerica_thumb.png',
-        #                             pos=(-0.9, 25, -0.9), scale=0.2, color=(0.9, 0.9, 0.9, 0.8))
-        # imageObject2.setTransparency(TransparencyAttrib.MAlpha)
+        imageObject = OnscreenImage(image='textures/lightpost.png',
+                                    pos=(-0.9, 25, 0.9), scale=(0.06, 1, 0.08), color=(0.9, 0.9, 0.9, 0.8))
+        imageObject.setTransparency(TransparencyAttrib.MAlpha)
+        imageObject1 = OnscreenImage(image='textures/palm_tree.png',
+                                    pos=(0.85, 25, 0.9), scale=0.09, color=(0.9, 0.9, 0.9, 0.8))
+        imageObject1.setTransparency(TransparencyAttrib.MAlpha)
+        imageObject2 = OnscreenImage(image='textures/transamerica_thumb.png',
+                                    pos=(-0.9, 25, -0.9), scale=0.2, color=(0.9, 0.9, 0.9, 0.8))
+        imageObject2.setTransparency(TransparencyAttrib.MAlpha)
         # background color doesn't show up anyway
         #base.setBackgroundColor(115 / 255, 115 / 255, 115 / 255)
 
@@ -181,11 +185,11 @@ class AvatarWorld(DirectObject):
                 if float(current_list[2]) == 0:
                     print 'make circle for invisible'
                     self.block_done = True
-                    self.make_circle()
+                    self.make_circle(1)
                     self.avatar_color = [0, 1, 1]
                 elif float(current_list[2]) < 1:
                     print 'make circle for alpha'
-                    self.make_circle()
+                    self.make_circle(0)
             if current_list[1] == 'stash':
                 if current_list[2] == 'True':
                     self.fruitModel[current_list[0]].stash()
@@ -197,7 +201,7 @@ class AvatarWorld(DirectObject):
                     # with alpha fruit, maybe
                     # see what is next in line, if next is alpha and current is
                     # recall stashing,
-                    print self.fruit_status[-1]
+                    # print self.fruit_status[-1]
                     # if stashing the recall fruit, erase the circle,
                     # return avatar line color to normal
                     if current_list[0] in self.alpha:
@@ -216,10 +220,10 @@ class AvatarWorld(DirectObject):
                             # print self.fruit_status_ts[-2] - self.fruit_status_ts[-1]
                             if self.fruit_status_ts[-2] - self.fruit_status_ts[-1] > 0.2:
                                 print 'should only reach here with old data'
-                                self.make_circle()
+                                self.make_circle(1)
                                 self.avatar_color = [0, 1, 1]
                 else:
-                    print 'unstash'
+                    # print 'unstash'
                     self.fruitModel[current_list[0]].unstash()
                     # print self.fruitModel[current_list[0]].isStashed()
             self.fruit_status_ts.pop()
@@ -239,8 +243,12 @@ class AvatarWorld(DirectObject):
             # print('move fruit', fruit, position)
             self.fruitModel[fruit].setPos(
                 Point3(float(position[0])/2, 25, float(position[1])/2))
+            # print 'fruit pos ts', self.fruit_pos_ts
+            # print 'time', t_time
+            if not self.fruit_pos_ts:
+                break
 
-    def make_circle(self):
+    def make_circle(self, radius_ind):
         alpha_circle = LineSegs()
         alpha_circle.setThickness(2.0)
         alpha_circle.setColor(1, 1, 0, 1)
@@ -249,8 +257,8 @@ class AvatarWorld(DirectObject):
         # print alpha_pos
         for i in range(50):
             a = angle_radians * i / 49
-            y = self.goal_radius * sin(a)
-            x = self.goal_radius * cos(a)
+            y = self.goal_radius[radius_ind] * sin(a)
+            x = self.goal_radius[radius_ind] * cos(a)
             alpha_circle.drawTo((x + alpha_pos[0], self.drawing_layer, y + alpha_pos[2]))
         self.alpha_circle_node.append(self.base.render.attachNewNode(alpha_circle.create()))
 

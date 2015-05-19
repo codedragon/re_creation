@@ -292,9 +292,9 @@ class GetData():
         return lfp_data[0]
 
     def pickle_info(self):
-        print 'pickle'
-        for k, v in self.fruit_pos.iteritems():
-            print k, v
+        # print 'pickle'
+        # for k, v in self.fruit_pos.iteritems():
+            # print k, v
         with open(self.save_filename, 'wb') as output:
             pickle.dump(self.resolution, output, -1)
             pickle.dump(self.start_time, output, -1)

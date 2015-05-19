@@ -112,6 +112,7 @@ class BananaWorld(DirectObject):
         self.fruit_pos_ts = data.fruit_pos_ts
         self.trial_mark = data.trial_mark
 
+        print 'fruit pos timestamps', self.fruit_pos_ts
         # initialize other variables
         self.eye_spot = None
 
@@ -124,7 +125,7 @@ class BananaWorld(DirectObject):
 
         # get last time stamp (first of list) for avatar to calculate length of movie
         # add half a second buffer.
-        movie_length = self.avatar_ht[0] + 0.5
+        movie_length = self.avatar_ht[0] + 0.8
         print('movie length', movie_length)
         self.set_environment(environ)
 
@@ -134,11 +135,11 @@ class BananaWorld(DirectObject):
         # the correct banana
 
         self.fruitModel = {}
-        print('fruit', self.fruit_pos)
+        # print('fruit', self.fruit_pos)
 
         for k, v in self.fruit_pos.iteritems():
             #print('i', i)
-            print('k', k)
+            # print('k', k)
             #print('v', v)
             if 'banana' in k:
                 self.fruitModel[k] = self.base.loader.loadModel('../goBananas/models/bananas/banana.bam')
@@ -158,7 +159,7 @@ class BananaWorld(DirectObject):
             # assume all fruit stashed to start
             self.fruitModel[k].stash()
             if k in data.alpha:
-                print 'set alpha'
+                # print 'set alpha'
                 self.alpha_node_path = self.fruitModel[k]
                 self.alpha_node_path.setTransparency(TransparencyAttrib.MAlpha)
 
@@ -280,6 +281,9 @@ class BananaWorld(DirectObject):
 
     def move_fruit(self, t_time):
         # did not reverse, since pain in the ass, and likely not many
+        # print 'position', self.fruit_pos_ts[0][0]
+        # print 'delete' self.fruit_pos_ts
+        # print 'time', t_time
         while self.fruit_pos_ts[0][0] < t_time:
             ts, fruit = self.fruit_pos_ts.pop(0)
             # print('current time stamp', ts)
@@ -288,6 +292,8 @@ class BananaWorld(DirectObject):
             self.fruitModel[fruit].setPos(
                 Point3(float(position[0]), float(position[1]), float(position[2])))
             # print('next timestamp', self.fruit_pos_ts[0])
+            if not self.fruit_pos_ts:
+                break
 
     def update_LFP(self, dt, last_lfp, lfp_trace, offset, gen_lfp):
         # lfp data is taken at 1000Hz, and dt is the number of seconds since
