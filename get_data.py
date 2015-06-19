@@ -52,7 +52,6 @@ class GetData():
             self.save_filename = config['movie_data_filename']
             self.get_eye_data = config['use_eye_data']
             self.lfp_data_file = config['lfp_data_file']
-            self.num_fruit = config['num_fruit']
             self.fruit_list = config['fruit_list']
 
         self.trial_mark = []

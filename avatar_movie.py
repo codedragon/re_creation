@@ -38,7 +38,7 @@ class AvatarWorld(DirectObject):
         # options resolution resW resH
         self.base = ShowBase()
         props = WindowProperties()
-        props.setSize(600, 600)
+        # props.setSize(600, 600)
         self.base.win.requestProperties(props)
 
         border = LineSegs()

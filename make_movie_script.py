@@ -3,12 +3,12 @@ from make_movie import BananaWorld
 from avatar_movie import AvatarWorld
 import os.path
 
-config_file = 'GR_BR_15_05_18_10_38'
+config_file = 'GR_BR_15_06_18_11_55'
 save_data = True  # normally saves if there is no data file yet, but this ensures writing over any existing data file.
 config = {}
 execfile('configs/' + config_file + '.py', config)
 distance_goal = config['distance_goal']
-config['data_filename'] = '../data_goBananas/' + config_file + '/log.txt'
+config['data_filename'] = '../raw_data/' + config_file + '/log.txt'
 #execfile('config.py', config)
 print config['movie_data_filename']
 if os.path.isfile(config['movie_data_filename']) and not save_data:
