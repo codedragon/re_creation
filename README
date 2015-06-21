@@ -1,3 +1,5 @@
 Set of files to re-create either a scene or a segment of a goBananas game from the original data file. Eventually will optionally overlay eye trace over the video re-play. Uses time stamps to determine where in file to re-create.
 
+I keep a set of all of the configurations I use to make a movie, so I know what I did. When I make a new movie, I copy config.py (my configuration template) to a configs directory with the name of the current task (for example, GR_BR_15_06_18_11_55.py). I then tweak it appropriately for the new movie, and then update make_movie_script to point to the correct configuration file. Then I run make_movie_script. If you have save_movie or save_avatar_movie true in the config file, the image sequence will be created in a ../movies/frames/ directory (I have one directory for the movie of the game and one for the avatar). Creating the movies takes a long time (for both the game movie and the avatar movie), so generally I just have watch_movie as true to see what I am going to get before I actually save.
+
 I used quicktime pro to open the image sequence and save as a quicktime movie
