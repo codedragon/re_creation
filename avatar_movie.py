@@ -24,9 +24,17 @@ class AvatarWorld(DirectObject):
         self.fruit_pos_ts = data.fruit_pos_ts
         self.trial_mark = data.trial_mark
         self.alpha = data.alpha
+        # print 'alpha', self.alpha
         # toggle to detect when a block of trials is finished
         self.block_done = False
-        # print self.fruit_status
+        # print 'fruit status', self.fruit_status
+        self.use_alpha = False
+        # convoluted way to see if we are really using invisible fruit
+        for i in self.fruit_status:
+            if i[1] == 'alpha' and float(i[2]) < 1:
+                self.use_alpha = True
+                # print 'true', float(i[2])
+        # print 'use alpha', self.use_alpha
         # really should pull this from the config file (distance_goal)
         # everything is at 1/2 size
         if distance_goal:
@@ -45,6 +53,7 @@ class AvatarWorld(DirectObject):
         border.setThickness(2.0)
         #corner = 600/100 * 5/6
         corner = 5.5
+        
         # print corner
         # red
         border.setColor(1, 0, 0)
@@ -120,7 +129,7 @@ class AvatarWorld(DirectObject):
             # assume all fruit stashed to start
             self.fruitModel[k].stash()
             if k in data.alpha:
-                # print 'set alpha'
+                # print 'set alpha', data.alpha
                 self.alpha_node_path = self.fruitModel[k]
                 self.alpha_node_path.setTransparency(TransparencyAttrib.MAlpha)
 
@@ -182,6 +191,7 @@ class AvatarWorld(DirectObject):
             if current_list[1] == 'alpha':
                 self.alpha_node_path.setAlphaScale(float(current_list[2]))
                 # if we are changing banana alpha to something less than 1, turn on circle
+                # print 'alpha', float(current_list[2])
                 if float(current_list[2]) == 0:
                     print 'make circle for invisible'
                     self.block_done = True
@@ -214,14 +224,15 @@ class AvatarWorld(DirectObject):
                     # can't use timing, self.fruit_status_ts[-1]
                     # if we are stashing a cherry, and the next thing to happen is alpha 1 and
                     # the next time stamp is not immediately, than must be invisible.
-                    if current_list[0] not in self.alpha:
-                        if self.fruit_status[-1][2] == '1':
-                            # print 'next alpha?'
-                            # print self.fruit_status_ts[-2] - self.fruit_status_ts[-1]
-                            if self.fruit_status_ts[-2] - self.fruit_status_ts[-1] > 0.2:
-                                print 'should only reach here with old data'
-                                self.make_circle(1)
-                                self.avatar_color = [0, 1, 1]
+                    if self.use_alpha:
+                        if current_list[0] not in self.alpha:
+                            if self.fruit_status[-1][2] == '1':
+                                # print 'next alpha?'
+                                # print self.fruit_status_ts[-2] - self.fruit_status_ts[-1]
+                                if self.fruit_status_ts[-2] - self.fruit_status_ts[-1] > 0.2:
+                                    print 'should only reach here with old data'
+                                    self.make_circle(1)
+                                    self.avatar_color = [0, 1, 1]
                 else:
                     # print 'unstash'
                     self.fruitModel[current_list[0]].unstash()

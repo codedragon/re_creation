@@ -12,8 +12,8 @@ class BananaWorld(DirectObject):
         self.record = record
         # make sure directory exists
         movie_name = '../movies/frames/game/game'
-        environ = 'original'
-        #environ = 'circle'
+        # environ = 'original'
+        environ = 'circle'
 
         data = MovieData(movie_data_file, use_eye_data)
 
@@ -159,7 +159,7 @@ class BananaWorld(DirectObject):
             # assume all fruit stashed to start
             self.fruitModel[k].stash()
             if k in data.alpha:
-                # print 'set alpha'
+                print 'set alpha', data.alpha
                 self.alpha_node_path = self.fruitModel[k]
                 self.alpha_node_path.setTransparency(TransparencyAttrib.MAlpha)
 
@@ -196,8 +196,8 @@ class BananaWorld(DirectObject):
             stLightModel.setScale(0.75)
             stLightModel.reparentTo(self.base.render)
         elif environ == 'circle':
-            terrainModel = self.base.loader.loadModel('../goBananas/models/new/round_courtyard2.bam')
-            skyModel = self.base.loader.loadModel('../goBananas/models/new/sky_kahana.bam')
+            terrainModel = self.base.loader.loadModel('../goBananas/models/play_space/round_courtyard.bam')
+            skyModel = self.base.loader.loadModel('../goBananas/models/sky/sky_kahana2.bam')
             skyModel.setPos(Point3(0, 0, -0.5))
             skyModel.setScale(Point3(2, 2, 4))
 
@@ -267,7 +267,8 @@ class BananaWorld(DirectObject):
             # print current_list
             # list goes: fruit name, what happens, how much
             if current_list[1] == 'alpha':
-                self.alpha_node_path.setAlphaScale(float(current_list[2]))
+                if float(current_list[2]) < 1:
+                    self.alpha_node_path.setAlphaScale(float(current_list[2]))
             if current_list[1] == 'stash':
                 if current_list[2] == 'True':
                     self.fruitModel[current_list[0]].stash()
