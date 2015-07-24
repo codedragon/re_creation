@@ -12,8 +12,8 @@ class BananaWorld(DirectObject):
         self.record = record
         # make sure directory exists
         movie_name = '../movies/frames/game/game'
-        # environ = 'original'
-        environ = 'circle'
+        environ = 'original'
+        # environ = 'circle'
 
         data = MovieData(movie_data_file, use_eye_data)
 
@@ -112,7 +112,7 @@ class BananaWorld(DirectObject):
         self.fruit_pos_ts = data.fruit_pos_ts
         self.trial_mark = data.trial_mark
 
-        print 'fruit pos timestamps', self.fruit_pos_ts
+        # print 'fruit pos timestamps', self.fruit_pos_ts
         # initialize other variables
         self.eye_spot = None
 
@@ -264,16 +264,17 @@ class BananaWorld(DirectObject):
         # print self.avatar_pos[-1]
         while self.fruit_status_ts[-1] < t_time:
             current_list = self.fruit_status.pop()
-            # print current_list
+            # print 'current list', current_list
             # list goes: fruit name, what happens, how much
             if current_list[1] == 'alpha':
-                if float(current_list[2]) < 1:
+                # sometimes alpha is one...
+                if float(current_list[2]) <= 1:
                     self.alpha_node_path.setAlphaScale(float(current_list[2]))
             if current_list[1] == 'stash':
                 if current_list[2] == 'True':
                     self.fruitModel[current_list[0]].stash()
                 else:
-                    # print 'unstash'
+                    # print 'unstash', current_list[0]
                     self.fruitModel[current_list[0]].unstash()
             #         print self.fruitModel[current_list[0]].isStashed()
             self.fruit_status_ts.pop()

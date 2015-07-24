@@ -3,7 +3,8 @@ from make_movie import BananaWorld
 from avatar_movie import AvatarWorld
 import os.path
 
-config_file = 'JN_15_07_16_14_37'
+config_file = 'GR_BR_15_06_18_11_55'
+# config_file = 'GR_BR_15_06_18_11_55'
 save_data = True  # normally saves if there is no data file yet, but this ensures writing over any existing data file.
 config = {}
 execfile('configs/' + config_file + '.py', config)
