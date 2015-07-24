@@ -11,7 +11,8 @@ from math import radians, cos, sin
 class AvatarWorld(DirectObject):
     def __init__(self, datafile, record=True, distance_goal=None):
         DirectObject.__init__(self)
-
+        # environ = 'circle'
+        environ = 'original'
         movie_name = '../movies/frames/avatar/avatar'
 
         data = MovieData(datafile)
@@ -24,6 +25,9 @@ class AvatarWorld(DirectObject):
         self.fruit_pos_ts = data.fruit_pos_ts
         self.trial_mark = data.trial_mark
         self.alpha = data.alpha
+
+        self.scale_factor = 1
+
         # print 'alpha', self.alpha
         # toggle to detect when a block of trials is finished
         self.block_done = False
@@ -49,46 +53,53 @@ class AvatarWorld(DirectObject):
         # props.setSize(600, 600)
         self.base.win.requestProperties(props)
 
-        border = LineSegs()
-        border.setThickness(2.0)
+        self.drawing_layer = 25    
         #corner = 600/100 * 5/6
-        corner = 5.5
-        
-        # print corner
-        # red
-        border.setColor(1, 0, 0)
-        border.moveTo(corner, 25, corner)
-        border.drawTo(corner, 25, -corner)
+        if environ == 'original':
+            border = LineSegs()
+            border.setThickness(2.0)
+            corner = 5.5    
+            # print corner
+            # red
+            border.setColor(1, 0, 0)
+            border.moveTo(corner, 25, corner)
+            border.drawTo(corner, 25, -corner)
 
-        # purple
-        border.setColor(1, 0, 1)
-        border.moveTo(corner, 25, -corner)
-        border.drawTo(-corner, 25, -corner)
+            # purple
+            border.setColor(1, 0, 1)
+            border.moveTo(corner, 25, -corner)
+            border.drawTo(-corner, 25, -corner)
 
-        # white
-        border.setColor(1, 1, 1)
-        border.moveTo(-corner, 25, -corner)
-        border.drawTo(-corner, 25, corner)
+            # white
+            border.setColor(1, 1, 1)
+            border.moveTo(-corner, 25, -corner)
+            border.drawTo(-corner, 25, corner)
 
-        # green
-        border.setColor(0, 1, 0)
-        border.moveTo(-corner, 25, corner)
-        border.drawTo(corner, 25, corner)
-        self.base.render.attachNewNode(border.create(True))
+            # green
+            border.setColor(0, 1, 0)
+            border.moveTo(-corner, 25, corner)
+            border.drawTo(corner, 25, corner)
+            self.base.render.attachNewNode(border.create(True))
 
-        imageObject = OnscreenImage(image='textures/lightpost.png',
-                                    pos=(-0.9, 25, 0.9), scale=(0.06, 1, 0.08), color=(0.9, 0.9, 0.9, 0.8))
-        imageObject.setTransparency(TransparencyAttrib.MAlpha)
-        imageObject1 = OnscreenImage(image='textures/palm_tree.png',
-                                    pos=(0.85, 25, 0.9), scale=0.09, color=(0.9, 0.9, 0.9, 0.8))
-        imageObject1.setTransparency(TransparencyAttrib.MAlpha)
-        imageObject2 = OnscreenImage(image='textures/transamerica_thumb.png',
-                                    pos=(-0.9, 25, -0.9), scale=0.2, color=(0.9, 0.9, 0.9, 0.8))
-        imageObject2.setTransparency(TransparencyAttrib.MAlpha)
-        # background color doesn't show up anyway
-        #base.setBackgroundColor(115 / 255, 115 / 255, 115 / 255)
-
-        self.last_avt = self.avatar_pos.pop()
+            imageObject = OnscreenImage(image='textures/lightpost.png',
+                                        pos=(-0.9, 25, 0.9), scale=(0.06, 1, 0.08), color=(0.9, 0.9, 0.9, 0.8))
+            imageObject.setTransparency(TransparencyAttrib.MAlpha)
+            imageObject1 = OnscreenImage(image='textures/palm_tree.png',
+                                        pos=(0.85, 25, 0.9), scale=0.09, color=(0.9, 0.9, 0.9, 0.8))
+            imageObject1.setTransparency(TransparencyAttrib.MAlpha)
+            imageObject2 = OnscreenImage(image='textures/transamerica_thumb.png',
+                                        pos=(-0.9, 25, -0.9), scale=0.2, color=(0.9, 0.9, 0.9, 0.8))
+            imageObject2.setTransparency(TransparencyAttrib.MAlpha)
+            # background color doesn't show up anyway
+            #base.setBackgroundColor(115 / 255, 115 / 255, 115 / 255)
+        else:
+            # circle
+            # needs to be smaller
+            self.scale_factor = 0.7
+            color = Point3(0.9, 0.9, 0.9)
+            self.make_circle(8 * self.scale_factor, (0, 0, 0), color)
+        last_avt = self.avatar_pos.pop()
+        self.last_avt = [i * self.scale_factor for i in last_avt]
         #base.cam.setPos(Point3(points[0], points[1], points[2]))
         #base.cam.setH(self.avatar_h.pop(0))
         #self.avatar_ht.pop(0)
@@ -99,7 +110,6 @@ class AvatarWorld(DirectObject):
         print('movie length', movie_length)
         self.avatar_node = []
         self.avatar_color = [1, 1, 1]
-        self.drawing_layer = 25
         self.alpha_circle_node = []
 
         self.fruitModel = {}
@@ -175,10 +185,11 @@ class AvatarWorld(DirectObject):
         # print('positions', group_avatar)
         if group_avatar:
             avt.moveTo(self.last_avt[0], self.drawing_layer, self.last_avt[1])
-            self.last_avt = group_avatar[0]
+            self.last_avt = [i * self.scale_factor for i in group_avatar[0]]
             for i in group_avatar:
                 # print(i[0], i[1], i[2])
-                avt.drawTo(i[0], self.drawing_layer, i[1])
+                pos = [j * self.scale_factor for j in i]
+                avt.drawTo(pos[0], self.drawing_layer, pos[1])
             self.avatar_node.append(self.base.render.attachNewNode(avt.create()))
 
     def update_fruit(self, t_time):
@@ -193,13 +204,13 @@ class AvatarWorld(DirectObject):
                 # if we are changing banana alpha to something less than 1, turn on circle
                 # print 'alpha', float(current_list[2])
                 if float(current_list[2]) == 0:
-                    print 'make circle for invisible'
+                    # print 'make circle for invisible'
                     self.block_done = True
-                    self.make_circle(1)
+                    self.make_circle(self.goal_radius[1], self.alpha_node_path.getPos())
                     self.avatar_color = [0, 1, 1]
                 elif float(current_list[2]) < 1:
-                    print 'make circle for alpha'
-                    self.make_circle(0)
+                    # print 'make circle for alpha'
+                    self.make_circle(self.goal_radius[0], self.alpha_node_path.getPos())
             if current_list[1] == 'stash':
                 if current_list[2] == 'True':
                     self.fruitModel[current_list[0]].stash()
@@ -231,7 +242,7 @@ class AvatarWorld(DirectObject):
                                 # print self.fruit_status_ts[-2] - self.fruit_status_ts[-1]
                                 if self.fruit_status_ts[-2] - self.fruit_status_ts[-1] > 0.2:
                                     print 'should only reach here with old data'
-                                    self.make_circle(1)
+                                    self.make_circle(self.goal_radius[1], self.alpha_node_path.getPos())
                                     self.avatar_color = [0, 1, 1]
                 else:
                     # print 'unstash'
@@ -250,29 +261,34 @@ class AvatarWorld(DirectObject):
             #print 'layer', self.drawing_layer
             ts, fruit = self.fruit_pos_ts.pop(0)
             # print('current time stamp', ts)
-            position = self.fruit_pos[fruit]['position'].pop(0)
+            # 
+            position = [float(i) * self.scale_factor * 0.5 for i in self.fruit_pos[fruit]['position'].pop(0)]
             # print('move fruit', fruit, position)
             self.fruitModel[fruit].setPos(
-                Point3(float(position[0])/2, 25, float(position[1])/2))
+                Point3(position[0], 25, position[1]))
             # print 'fruit pos ts', self.fruit_pos_ts
             # print 'time', t_time
             if not self.fruit_pos_ts:
                 break
 
-    def make_circle(self, radius_ind):
-        alpha_circle = LineSegs()
-        alpha_circle.setThickness(2.0)
-        alpha_circle.setColor(1, 1, 0, 1)
+    def make_circle(self, radius, center, color=None):
+        circle = LineSegs()
+        circle.setThickness(2.0)
+        if not color:
+            circle.setColor(1, 1, 0, 1)
+        else:
+            circle.setColor(color)
         angle_radians = radians(360)
-        alpha_pos = self.alpha_node_path.getPos()
         # print alpha_pos
         for i in range(50):
             a = angle_radians * i / 49
-            y = self.goal_radius[radius_ind] * sin(a)
-            x = self.goal_radius[radius_ind] * cos(a)
-            alpha_circle.drawTo((x + alpha_pos[0], self.drawing_layer, y + alpha_pos[2]))
-        self.alpha_circle_node.append(self.base.render.attachNewNode(alpha_circle.create()))
-
+            y = radius * sin(a)
+            x = radius * cos(a)
+            circle.drawTo((x + center[0], self.drawing_layer, y + center[2]))
+        if not color:
+            self.alpha_circle_node.append(self.base.render.attachNewNode(circle.create()))
+        else:
+            self.base.render.attachNewNode(circle.create())
     def erase_circle(self):
         for i in self.alpha_circle_node:
             i.detachNode()
